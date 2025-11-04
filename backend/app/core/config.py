@@ -17,34 +17,32 @@ class Settings(BaseSettings):
     # Les origines sont définies via la variable d'environnement BACKEND_CORS_ORIGINS
     # Format: URL1,URL2,URL3 (séparées par des virgules)
     # Valeurs par défaut pour le développement local
-    BACKEND_CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8000",
-    ]
-
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str], None]) -> List[str]:
-        if v is None:
-            return []
-        if isinstance(v, str):
-            # Gérer les chaînes vides
-            if not v.strip():
-                return []
-            # Si c'est une chaîne JSON (liste), essayer de la parser
-            if v.strip().startswith("["):
-                import json
-                try:
-                    return json.loads(v)
-                except json.JSONDecodeError:
-                    pass
-            # Sinon, séparer par virgules
-            return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, list):
-            return v
-        # Si aucun cas ne correspond, retourner une liste vide par défaut
-        return []
+    _BACKEND_CORS_ORIGINS: Union[str, List[str], None] = None
+    
+    @property
+    def BACKEND_CORS_ORIGINS(self) -> List[str]:
+        """Parse BACKEND_CORS_ORIGINS from environment variable or default values"""
+        # Si la variable d'environnement est définie, l'utiliser
+        import os
+        env_value = os.getenv("BACKEND_CORS_ORIGINS")
+        if env_value:
+            # Séparer par virgules et nettoyer
+            return [i.strip() for i in env_value.split(",") if i.strip()]
+        
+        # Si _BACKEND_CORS_ORIGINS est défini dans la classe, l'utiliser
+        if self._BACKEND_CORS_ORIGINS:
+            if isinstance(self._BACKEND_CORS_ORIGINS, str):
+                return [i.strip() for i in self._BACKEND_CORS_ORIGINS.split(",") if i.strip()]
+            elif isinstance(self._BACKEND_CORS_ORIGINS, list):
+                return self._BACKEND_CORS_ORIGINS
+        
+        # Valeurs par défaut pour le développement local
+        return [
+            "http://localhost:3000",
+            "http://localhost:8000",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:8000",
+        ]
 
     # Database settings
     POSTGRES_SERVER: str = "localhost"
