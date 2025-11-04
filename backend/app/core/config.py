@@ -25,12 +25,26 @@ class Settings(BaseSettings):
     ]
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
+    def assemble_cors_origins(cls, v: Union[str, List[str], None]) -> List[str]:
+        if v is None:
+            return []
+        if isinstance(v, str):
+            # Gérer les chaînes vides
+            if not v.strip():
+                return []
+            # Si c'est une chaîne JSON (liste), essayer de la parser
+            if v.strip().startswith("["):
+                import json
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            # Sinon, séparer par virgules
+            return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, list):
             return v
-        raise ValueError(v)
+        # Si aucun cas ne correspond, retourner une liste vide par défaut
+        return []
 
     # Database settings
     POSTGRES_SERVER: str = "localhost"
