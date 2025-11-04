@@ -16,9 +16,13 @@ RUN npm install --legacy-peer-deps
 # Copy application code
 COPY . .
 
-# Expose port
+# Build the Next.js application for production
+RUN npm run build
+
+# Expose port (Render will set PORT env variable)
 EXPOSE 3000
 
-# Run development server
-CMD ["npm", "run", "dev"]
+# Start the production server
+# Next.js will use PORT environment variable if set (Render requirement)
+CMD ["sh", "-c", "next start -p ${PORT:-3000}"]
 
