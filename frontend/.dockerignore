@@ -1,0 +1,36 @@
+node_modules
+npm-debug.log
+.next
+.git
+.gitignore
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Build outputs
+dist
+build
+out
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage
+
+# Documentation
+README.md
+*.md
+
+# Misc
+.vercel
+pnpm-lock.yaml
+

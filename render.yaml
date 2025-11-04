@@ -1,0 +1,41 @@
+services:
+  # Backend Service
+  - type: web
+    name: breastcare-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+    healthCheckPath: /health
+
+  # Frontend Service
+  - type: web
+    name: breastcare-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    region: oregon
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+    buildCommand: ""
+    startCommand: ""
+
+databases:
+  # PostgreSQL Database
+  - name: breastcare-db
+    plan: free
+    region: oregon
+    databaseName: breastcare_db
+    user: breastcare

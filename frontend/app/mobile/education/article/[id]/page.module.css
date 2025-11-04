@@ -1,0 +1,12 @@
+/* Styles spécifiques pour supprimer les checkmarks des listes */
+.noCheckmarks ul,
+.noCheckmarks li {
+  list-style: none !important;
+}
+
+.noCheckmarks li::before,
+.noCheckmarks li::after {
+  content: none !important;
+  display: none !important;
+}
+

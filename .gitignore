@@ -1,0 +1,112 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_new/
+env/
+.venv/
+*.egg-info/
+
+# databases
+*.db
+*.sqlite
+*.sqlite3
+
+# backend specific
+backend/app/instance/
+backend/data/
+backend/models/checkpoints/
+backend/models/weights/
+
+# uploaded files
+backend/uploads/
+backend/static/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Archives et fichiers volumineux
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+archive*.zip
+*.backup
+
+# Dossiers temporaires et extractions
+Extract/
+extracted_data/
+
+# Fichiers de test temporaires
+test_*.py
+*_test.py
+train_log.txt
+fix_*.py
+force_*.py
+
+# Fichiers de données CSV volumineux (sauf ceux nécessaires au fonctionnement)
+*.csv
+!requirements*.csv
+# Inclure les CSV nécessaires pour les annotations ML
+!metadata.csv
+!breast-level_annotations*.csv
+!finding_annotations*.csv
+
+# Images volumineuses (hors frontend/public qui sont nécessaires)
+*.png
+*.jpg
+*.jpeg
+!frontend/public/**/*.png
+!frontend/public/**/*.jpg
+!frontend/public/**/*.jpeg
+
+# Fichiers de modèle ML volumineux (sauf le modèle nécessaire au fonctionnement)
+*.pth
+*.h5
+*.ckpt
+*.pt
+*.pkl
+*.hdf5
+*.model
+# Inclure le modèle nécessaire pour l'analyse mammographique
+!backend/app/ml/model/best_medsiglip_model.pth
+
+# Notebooks (optionnel - décommentez si vous ne voulez pas les inclure)
+# notebooks/
