@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Use standalone output for Docker deployment (avoids prerendering issues)
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },

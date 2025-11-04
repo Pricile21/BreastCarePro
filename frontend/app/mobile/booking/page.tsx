@@ -2,6 +2,8 @@
 
 // Force dynamic rendering to prevent build-time prerendering errors
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const dynamicParams = true
 
 import type React from "react"
 
