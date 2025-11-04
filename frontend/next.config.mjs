@@ -2,6 +2,10 @@
 const nextConfig = {
   // Use standalone output for Docker deployment (avoids prerendering issues)
   output: 'standalone',
+  // Disable static optimization for dynamic pages
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

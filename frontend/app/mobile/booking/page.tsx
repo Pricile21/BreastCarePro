@@ -7,7 +7,7 @@ export const dynamicParams = true
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { CalendarIcon, ArrowLeft, MapPin, Loader2 } from "lucide-react"
 import { apiClient, HealthcareCenter } from "@/lib/api"
 
-export default function BookingPage() {
+// Internal component that uses useSearchParams (must be wrapped in Suspense)
+function BookingPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const providerId = searchParams.get('provider')
@@ -352,5 +353,18 @@ export default function BookingPage() {
         )}
       </main>
     </div>
+  )
+}
+
+// Main component with Suspense wrapper for useSearchParams
+export default function BookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-background to-accent/5 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <BookingPageContent />
+    </Suspense>
   )
 }
