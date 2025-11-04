@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering to prevent build-time prerendering errors
+export const dynamic = 'force-dynamic'
+
 import type React from "react"
 
 import { useState, useEffect } from "react"
