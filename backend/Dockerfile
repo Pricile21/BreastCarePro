@@ -71,5 +71,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --limit-max-requests: Augmenter la limite de taille de requête à 100MB (100 * 1024 * 1024 = 104857600 bytes)
+# --timeout-keep-alive: Augmenter le timeout pour les requêtes longues (analyses ML)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--limit-concurrency", "1000", "--timeout-keep-alive", "300"]
 

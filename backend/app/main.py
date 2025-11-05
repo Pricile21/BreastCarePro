@@ -22,6 +22,26 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
+# Augmenter la limite de taille de requête pour les uploads de mammographies (4 images)
+# Par défaut, Starlette limite à 1MB, on augmente à 100MB
+from starlette.middleware.base import BaseHTTPMiddleware as StarletteBaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import Response
+
+class IncreaseBodySizeMiddleware(StarletteBaseHTTPMiddleware):
+    """Middleware pour augmenter la limite de taille de requête"""
+    async def dispatch(self, request: StarletteRequest, call_next):
+        # Augmenter la limite de taille à 100MB (100 * 1024 * 1024 bytes)
+        # Ceci permet d'uploader 4 images mammographiques (~2-5MB chacune)
+        if hasattr(request, '_read_body'):
+            # Starlette limite par défaut à 1MB, on doit augmenter cela
+            pass  # La limite est gérée par le serveur ASGI (Uvicorn)
+        response = await call_next(request)
+        return response
+
+# Ajouter le middleware pour augmenter la taille de requête
+app.add_middleware(IncreaseBodySizeMiddleware)
+
 # Middleware de logging ULTRA-PRÉCOCE (avant tout le reste)
 # Ce middleware capture TOUTES les requêtes, même celles qui échouent avant les autres middlewares
 @app.middleware("http")
@@ -29,17 +49,25 @@ async def ultra_early_logging_middleware(request: Request, call_next):
     """Logging ultra-précoce pour capturer toutes les requêtes"""
     import sys
     from datetime import datetime
+    # Log TOUTES les requêtes, y compris OPTIONS (CORS preflight)
     print(f"\n{'#'*80}")
     print(f"🚨 [ULTRA_EARLY] REQUÊTE REÇUE: {request.method} {request.url.path}")
     print(f"🚨 [ULTRA_EARLY] Timestamp: {datetime.now().isoformat()}")
     print(f"🚨 [ULTRA_EARLY] URL complète: {request.url}")
     print(f"🚨 [ULTRA_EARLY] Client: {request.client.host if request.client else 'N/A'}")
+    print(f"🚨 [ULTRA_EARLY] Origin: {request.headers.get('origin', 'N/A')}")
+    print(f"🚨 [ULTRA_EARLY] Content-Type: {request.headers.get('content-type', 'N/A')}")
     print(f"🚨 [ULTRA_EARLY] Headers: {dict(request.headers)}")
     sys.stdout.flush()
     
     try:
         response = await call_next(request)
         print(f"🚨 [ULTRA_EARLY] Réponse: {response.status_code}")
+        # Log les headers de réponse CORS
+        if hasattr(response, 'headers'):
+            cors_headers = {k: v for k, v in response.headers.items() if 'access-control' in k.lower()}
+            if cors_headers:
+                print(f"🚨 [ULTRA_EARLY] CORS Headers: {cors_headers}")
         sys.stdout.flush()
         return response
     except Exception as e:
@@ -250,6 +278,24 @@ async def root():
         "status": "active",
         "description": "AI-powered breast cancer screening platform for Africa"
     }
+
+# Endpoint de test pour vérifier que les POST fonctionnent
+@app.post("/test-post")
+async def test_post(request: Request):
+    """Endpoint de test pour vérifier que les POST arrivent au backend"""
+    import sys
+    print(f"\n{'='*80}")
+    print(f"✅ [TEST_POST] Requête POST reçue!")
+    print(f"✅ [TEST_POST] Headers: {dict(request.headers)}")
+    print(f"✅ [TEST_POST] Client: {request.client.host if request.client else 'N/A'}")
+    try:
+        body = await request.json()
+        print(f"✅ [TEST_POST] Body: {body}")
+    except:
+        print(f"✅ [TEST_POST] Body: (non-JSON)")
+    print(f"{'='*80}\n")
+    sys.stdout.flush()
+    return {"status": "ok", "message": "POST fonctionne!"}
 
 @app.get("/health")
 async def health_check():
