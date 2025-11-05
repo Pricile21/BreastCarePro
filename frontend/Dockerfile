@@ -25,6 +25,7 @@ RUN npm run build || (echo "⚠️ Build warning: Some pages failed to pre-rende
 EXPOSE 3000
 
 # Start the production server
-# Next.js will use PORT environment variable if set (Render requirement)
-CMD ["sh", "-c", "next start -p ${PORT:-3000}"]
+# Use npx to ensure next is found in node_modules/.bin
+# Next.js will use PORT environment variable if set (Render requirement)        
+CMD ["sh", "-c", "npx next start -p ${PORT:-3000}"]
 
