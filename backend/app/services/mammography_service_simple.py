@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 import uuid
 import os
+import sys
 import cv2
 import numpy as np
 from sqlalchemy.orm import Session
