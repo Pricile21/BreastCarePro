@@ -8,9 +8,9 @@ export const runtime = 'nodejs'
 
 import type React from "react"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,11 +19,21 @@ import { Textarea } from "@/components/ui/textarea"
 import { CalendarIcon, ArrowLeft, MapPin, Loader2 } from "lucide-react"
 import { apiClient, HealthcareCenter } from "@/lib/api"
 
-// Internal component that uses useSearchParams (must be wrapped in Suspense)
+// Internal component that reads search params from URL (client-side only)
 function BookingPageContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const providerId = searchParams.get('provider')
+  const [providerId, setProviderId] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+  
+  // Get provider ID from URL params (client-side only to avoid SSR issues)
+  useEffect(() => {
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const provider = params.get('provider')
+      setProviderId(provider)
+    }
+  }, [])
   
   const [provider, setProvider] = useState<HealthcareCenter | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,11 +62,12 @@ function BookingPageContent() {
 
   // Charger les données du centre de santé
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || !mounted) return
     
     const loadProvider = async () => {
       if (!providerId) {
         setLoading(false)
+        setError('Aucun centre de santé sélectionné')
         return
       }
       
@@ -74,7 +85,7 @@ function BookingPageContent() {
     }
     
     loadProvider()
-  }, [providerId, isAuthenticated])
+  }, [providerId, isAuthenticated, mounted])
 
   // Generate available dates for the next 30 days (excluding weekends for now)
   const generateAvailableDates = () => {
@@ -357,15 +368,7 @@ function BookingPageContent() {
   )
 }
 
-// Main component with Suspense wrapper for useSearchParams
+// Main component
 export default function BookingPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-background to-accent/5 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    }>
-      <BookingPageContent />
-    </Suspense>
-  )
+  return <BookingPageContent />
 }
