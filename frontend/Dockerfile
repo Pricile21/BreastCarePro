@@ -24,7 +24,7 @@ RUN npm run build 2>&1 | tee /tmp/build.log || echo "⚠️ Build warning: Some 
 # Ensure prerender-manifest.json exists (required by Next.js start)
 RUN mkdir -p .next && \
     if [ ! -f .next/prerender-manifest.json ]; then \
-      echo '{"version": 4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":null}' > .next/prerender-manifest.json; \
+      echo '{"version": 4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":{"previewModeId":"","previewModeSigningKey":"","previewModeEncryptionKey":""}}' > .next/prerender-manifest.json; \
     fi
 
 # Expose port (Render will set PORT env variable)
