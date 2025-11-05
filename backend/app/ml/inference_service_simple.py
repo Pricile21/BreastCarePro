@@ -171,26 +171,42 @@ class MedSigLIPInferenceService:
             print(f"   📋 Vos paramètres: BI-RADS={num_bi_rads}, Density={num_density}, View={num_view}")
             print(f"   📐 Dimension embedding détectée: {embedding_dim}")
             
-            # Charger le modèle de base MedSigLIP pour extraire les bons embeddings
-            try:
-                from app.ml.medsiglip_model import MedSigLIPMammographyModel
-                
-                print("   ⏳ Chargement du modèle de base MedSigLIP (nécessaire pour extraire les embeddings)...")
-                print("   ℹ️  Cela peut prendre quelques minutes la première fois (téléchargement si nécessaire)")
-                
-                # IMPORTANT: Utiliser les mêmes paramètres que lors de l'entraînement
-                # Le modèle MedSigLIPMammographyModel n'accepte que num_bi_rads_classes et num_density_classes
-                self.full_model = MedSigLIPMammographyModel(
-                    num_bi_rads_classes=num_bi_rads,
-                    num_density_classes=num_density,
-                    device=str(self.device)
-                )
-                
-                print("   ✅ Modèle de base MedSigLIP chargé")
-                
-            except Exception as e:
-                print(f"   ⚠️ Impossible de charger le modèle de base MedSigLIP: {e}")
-                print("   ℹ️  Le système utilisera un extracteur de features alternatif (moins précis)")
+            # Stocker la dimension d'embedding pour l'extracteur alternatif
+            self._embedding_dim = embedding_dim
+            
+            # DÉSACTIVER le chargement du modèle complet MedSigLIP en production (mémoire limitée)
+            # Le modèle complet (~2GB) nécessite beaucoup de RAM et peut faire crasher le backend sur Render (512MB limit)
+            # Les classificateurs peuvent fonctionner avec un extracteur de features alternatif
+            import os
+            enable_full_model = os.getenv("ENABLE_FULL_MEDSIGLIP_MODEL", "false").lower() == "true"
+            
+            if enable_full_model:
+                # Charger le modèle de base MedSigLIP pour extraire les bons embeddings
+                try:
+                    from app.ml.medsiglip_model import MedSigLIPMammographyModel
+                    
+                    print("   ⏳ Chargement du modèle de base MedSigLIP (nécessaire pour extraire les embeddings)...")
+                    print("   ℹ️  Cela peut prendre quelques minutes la première fois (téléchargement si nécessaire)")
+                    
+                    # IMPORTANT: Utiliser les mêmes paramètres que lors de l'entraînement
+                    # Le modèle MedSigLIPMammographyModel n'accepte que num_bi_rads_classes et num_density_classes
+                    self.full_model = MedSigLIPMammographyModel(
+                        num_bi_rads_classes=num_bi_rads,
+                        num_density_classes=num_density,
+                        device=str(self.device)
+                    )
+                    
+                    print("   ✅ Modèle de base MedSigLIP chargé")
+                    
+                except Exception as e:
+                    print(f"   ⚠️ Impossible de charger le modèle de base MedSigLIP: {e}")
+                    print("   ℹ️  Le système utilisera un extracteur de features alternatif (moins précis)")
+                    self.full_model = None
+            else:
+                # Mode production : utiliser l'extracteur de features alternatif (plus léger)
+                print("   ⚙️ Mode production activé : utilisation de l'extracteur de features alternatif")
+                print("   ℹ️  Pour activer le modèle complet MedSigLIP, définissez ENABLE_FULL_MEDSIGLIP_MODEL=true")
+                print("   ⚠️  Attention : le modèle complet nécessite ~4GB de RAM")
                 self.full_model = None
             
             # Créer et charger le classificateur BI-RADS
