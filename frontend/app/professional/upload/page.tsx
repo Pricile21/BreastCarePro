@@ -109,39 +109,58 @@ export default function UploadPage() {
       }
       
       // Appeler l'API d'analyse (utiliser l'URL configurée)
+      // Timeout de 5 minutes pour l'analyse ML qui peut prendre du temps
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-      const response = await fetch(`${apiUrl}/mammography/analyze`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: formData
-      })
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 300000) // 5 minutes
       
-      if (response.ok) {
-        const result = await response.json()
-        console.log('✅ Analyse terminée:', result)
+      try {
+        const response = await fetch(`${apiUrl}/mammography/analyze`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: formData,
+          signal: controller.signal
+        })
+      
+        clearTimeout(timeoutId)
         
-        // Rediriger vers la page de résultats avec l'ID d'analyse
-        router.push(`/professional/analysis/${result.id}`)
-      } else {
-        // Récupérer le message d'erreur
-        let errorMessage = 'Erreur inconnue'
-        try {
-          const error = await response.json()
-          errorMessage = error.detail || error.message || 'Erreur lors de l\'analyse'
-          console.error('❌ Erreur d\'analyse:', error)
-        } catch (e) {
-          errorMessage = await response.text() || `Erreur ${response.status}: ${response.statusText}`
-          console.error('❌ Erreur d\'analyse (réponse non-JSON):', errorMessage)
+        if (response.ok) {
+          const result = await response.json()
+          console.log('✅ Analyse terminée:', result)
+          
+          // Rediriger vers la page de résultats avec l'ID d'analyse
+          router.push(`/professional/analysis/${result.id}`)
+        } else {
+          // Récupérer le message d'erreur
+          let errorMessage = 'Erreur inconnue'
+          try {
+            const error = await response.json()
+            errorMessage = error.detail || error.message || 'Erreur lors de l\'analyse'
+            console.error('❌ Erreur d\'analyse:', error)
+          } catch (e) {
+            errorMessage = await response.text() || `Erreur ${response.status}: ${response.statusText}`
+            console.error('❌ Erreur d\'analyse (réponse non-JSON):', errorMessage)
+          }
+          
+          // Afficher le message d'erreur à l'utilisateur
+          alert(`❌ ${errorMessage}`)
         }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId)
         
-        // Afficher le message d'erreur à l'utilisateur
-        alert(`❌ ${errorMessage}`)
+        if (fetchError.name === 'AbortError') {
+          console.error('❌ Timeout: L\'analyse prend trop de temps (>5 minutes)')
+          alert('⏱️ L\'analyse prend trop de temps. Le backend peut être occupé ou le modèle ML peut prendre plus de temps que prévu. Veuillez réessayer.')
+        } else {
+          console.error('❌ Erreur de connexion:', fetchError)
+          alert('Erreur de connexion. Vérifiez votre connexion internet ou attendez que le backend se réveille (30-50 secondes pour le plan gratuit Render).')
+        }
       }
     } catch (error) {
-      console.error('❌ Erreur de connexion:', error)
-      alert('Erreur de connexion. Vérifiez votre connexion internet.')
+      console.error('❌ Erreur générale:', error)
+      alert('Erreur lors de la préparation de l\'analyse. Veuillez réessayer.')
     } finally {
       setIsAnalyzing(false)
     }
