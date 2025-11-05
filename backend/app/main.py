@@ -22,25 +22,8 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
-# Augmenter la limite de taille de requête pour les uploads de mammographies (4 images)
-# Par défaut, Starlette limite à 1MB, on augmente à 100MB
-from starlette.middleware.base import BaseHTTPMiddleware as StarletteBaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
-from starlette.responses import Response
-
-class IncreaseBodySizeMiddleware(StarletteBaseHTTPMiddleware):
-    """Middleware pour augmenter la limite de taille de requête"""
-    async def dispatch(self, request: StarletteRequest, call_next):
-        # Augmenter la limite de taille à 100MB (100 * 1024 * 1024 bytes)
-        # Ceci permet d'uploader 4 images mammographiques (~2-5MB chacune)
-        if hasattr(request, '_read_body'):
-            # Starlette limite par défaut à 1MB, on doit augmenter cela
-            pass  # La limite est gérée par le serveur ASGI (Uvicorn)
-        response = await call_next(request)
-        return response
-
-# Ajouter le middleware pour augmenter la taille de requête
-app.add_middleware(IncreaseBodySizeMiddleware)
+# Note: La limite de taille de requête est gérée par Uvicorn via --limit-concurrency et --timeout-keep-alive
+# Voir backend/Dockerfile pour la configuration Uvicorn
 
 # Middleware de logging ULTRA-PRÉCOCE (avant tout le reste)
 # Ce middleware capture TOUTES les requêtes, même celles qui échouent avant les autres middlewares
