@@ -130,11 +130,23 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         print(f"{'='*80}\n")
         sys.stdout.flush()
         
-        response = await call_next(request)
-        process_time = time.time() - start_time
-        print(f"✅ [MIDDLEWARE] Réponse envoyée: {response.status_code} (en {process_time:.3f}s)")
-        sys.stdout.flush()
-        return response
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            print(f"✅ [MIDDLEWARE] Réponse envoyée: {response.status_code} (en {process_time:.3f}s)")
+            sys.stdout.flush()
+            return response
+        except Exception as e:
+            # Capturer TOUTES les exceptions pour les logger
+            process_time = time.time() - start_time
+            error_type = type(e).__name__ if e else "UnknownError"
+            error_msg = str(e) if e and str(e).strip() else "Exception sans message"
+            print(f"❌ [MIDDLEWARE] EXCEPTION CAPTURÉE après {process_time:.3f}s: {error_type} - {error_msg}")
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
+            # Relancer l'exception pour que FastAPI la gère
+            raise
 
 # Ajouter le middleware de logging AVANT CORS
 app.add_middleware(LoggingMiddleware)
@@ -154,6 +166,42 @@ app.add_middleware(
 #     TrustedHostMiddleware,
 #     allowed_hosts=["localhost", "127.0.0.1", "0.0.0.0"],
 # )
+
+# Exception handler global pour capturer toutes les exceptions non gérées
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Gestionnaire d'exceptions global pour capturer toutes les erreurs non gérées"""
+    import sys
+    import traceback
+    error_type = type(exc).__name__
+    error_msg = str(exc) if exc and str(exc).strip() else "Exception sans message"
+    
+    print(f"\n{'='*80}")
+    print(f"❌ [GLOBAL_HANDLER] EXCEPTION NON GÉRÉE: {error_type}")
+    print(f"❌ [GLOBAL_HANDLER] Message: {error_msg}")
+    print(f"❌ [GLOBAL_HANDLER] Path: {request.method} {request.url.path}")
+    print(f"❌ [GLOBAL_HANDLER] Traceback complet:")
+    traceback.print_exc()
+    print(f"{'='*80}\n")
+    sys.stdout.flush()
+    
+    from fastapi.responses import JSONResponse
+    from fastapi import HTTPException
+    
+    # Si c'est une HTTPException, la retourner telle quelle
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail if exc.detail else f"Erreur HTTP {exc.status_code}"}
+        )
+    
+    # Pour les autres exceptions, retourner une erreur 500 avec un message clair
+    detail_msg = f"Erreur serveur: {error_msg}" if error_msg and error_msg != "Exception sans message" else f"Erreur serveur de type {error_type}. Vérifiez les logs pour plus de détails."
+    
+    return JSONResponse(
+        status_code=500,
+        content={"detail": detail_msg}
+    )
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
