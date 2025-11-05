@@ -19,13 +19,13 @@ COPY . .
 # Build the Next.js application for production
 # Note: Some pages may fail to pre-render (e.g., /mobile/booking with useSearchParams)
 # This is not critical as they will be rendered dynamically at runtime
-# We create a minimal prerender-manifest.json if it doesn't exist
-RUN npm run build 2>&1 | tee /tmp/build.log || \
-    (echo "⚠️ Build warning: Some pages failed to pre-render" && \
-     if [ ! -f .next/prerender-manifest.json ]; then \
-       echo '{"version": 4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":null}' > .next/prerender-manifest.json; \
-     fi && \
-     exit 0)
+RUN npm run build 2>&1 | tee /tmp/build.log || echo "⚠️ Build warning: Some pages failed to pre-render"
+
+# Ensure prerender-manifest.json exists (required by Next.js start)
+RUN mkdir -p .next && \
+    if [ ! -f .next/prerender-manifest.json ]; then \
+      echo '{"version": 4,"routes":{},"dynamicRoutes":{},"notFoundRoutes":[],"preview":null}' > .next/prerender-manifest.json; \
+    fi
 
 # Expose port (Render will set PORT env variable)
 EXPOSE 3000
