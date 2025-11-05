@@ -28,7 +28,8 @@ export default function PatientDetailsPage() {
         // Récupérer directement les informations du patient depuis l'endpoint /api/v1/patients/{patient_id}
         const token = localStorage.getItem('auth_token')
         console.log('🔍 Fetching patient data for ID:', patientId)
-        const patientResponse = await fetch(`http://localhost:8000/api/v1/patients/${patientId}`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+        const patientResponse = await fetch(`${apiUrl}/patients/${patientId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

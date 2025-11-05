@@ -21,12 +21,15 @@ export default function AnalysisResultPage() {
   const [exporting, setExporting] = useState(false)
   const [generatingReport, setGeneratingReport] = useState(false)
   const [showImagesModal, setShowImagesModal] = useState(false)
+  
+  // Get API URL from environment
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`http://localhost:8000/api/v1/mammography/analysis/${analysisId}`, {
+        const response = await fetch(`${apiUrl}/mammography/analysis/${analysisId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
           }
@@ -175,7 +178,7 @@ export default function AnalysisResultPage() {
     if (!analysis) return
     try {
       setValidating(true)
-      const response = await fetch(`http://localhost:8000/api/v1/mammography/analysis/${analysisId}/validate`, {
+      const response = await fetch(`${apiUrl}/mammography/analysis/${analysisId}/validate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
@@ -192,7 +195,7 @@ export default function AnalysisResultPage() {
           alert('✅ Analyse validée avec succès')
         } else {
           // Si l'endpoint ne retourne pas l'analyse, recharger
-          const updatedAnalysis = await fetch(`http://localhost:8000/api/v1/mammography/analysis/${analysisId}`, {
+          const updatedAnalysis = await fetch(`${apiUrl}/mammography/analysis/${analysisId}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
             }
@@ -429,7 +432,7 @@ export default function AnalysisResultPage() {
                     return (
                       <div key={i} className="aspect-square bg-muted rounded-lg relative overflow-hidden">
                         <img 
-                          src={`http://localhost:8000/api/v1/mammography/image/${fileInfo.path}`}
+                          src={`${apiUrl}/mammography/image/${fileInfo.path}`}
                           alt={`Mammographie ${fileInfo.view_type}`}
                           className="w-full h-full object-contain"
                           onError={(e) => {
@@ -505,10 +508,10 @@ export default function AnalysisResultPage() {
                     return (
                       <div key={i} className="aspect-square bg-muted rounded-lg relative overflow-hidden">
                         <img 
-                          src={`http://localhost:8000/api/v1/mammography/image/${fileInfo.path}`}
+                          src={`${apiUrl}/mammography/image/${fileInfo.path}`}
                           alt={`Mammographie ${fileInfo.view_type}`}
                           className="w-full h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                          onClick={() => window.open(`http://localhost:8000/api/v1/mammography/image/${fileInfo.path}`, '_blank')}
+                          onClick={() => window.open(`${apiUrl}/mammography/image/${fileInfo.path}`, '_blank')}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';

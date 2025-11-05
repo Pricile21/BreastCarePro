@@ -108,8 +108,9 @@ export default function UploadPage() {
         formData.append('patient_notes', patientInfo.notes)
       }
       
-      // Appeler l'API d'analyse
-      const response = await fetch('http://localhost:8000/api/v1/mammography/analyze', {
+      // Appeler l'API d'analyse (utiliser l'URL configurée)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const response = await fetch(`${apiUrl}/mammography/analyze`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
