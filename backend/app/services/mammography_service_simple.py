@@ -656,6 +656,7 @@ class MammographyService:
             if self.ml_model and self.ml_model.use_direct_classifiers and self.ml_model.bi_rads_classifier is not None:
                 print("🎯🎯🎯 MODE ACTIF: Classificateurs directs (VOTRE MODÈLE BEST)")
                 print("   ✅ Vos classificateurs BI-RADS et Densité seront utilisés")
+                import sys  # Import explicite ici pour éviter les conflits
                 sys.stdout.flush()
                 
                 # Analyser chaque image avec vos classificateurs séquentiellement
