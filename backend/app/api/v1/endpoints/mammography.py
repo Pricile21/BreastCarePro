@@ -31,39 +31,39 @@ async def analyze_mammography(
     """
     Analyze mammography images and return BI-RADS classification
     """
-    # Logs détaillés pour Render - FORCER l'affichage immédiat
-    print("\n" + "="*80)
-    print(f"🔍 [ANALYSE] Début de l'analyse - {datetime.now().isoformat()}")
-    print(f"🔍 [ANALYSE] Patient ID: {patient_id}")
-    print(f"🔍 [ANALYSE] Nombre de fichiers: {len(files) if files else 0}")
-    print(f"🔍 [ANALYSE] Informations patient: name={patient_name}, age={patient_age}")
-    print(f"🔍 [ANALYSE] User ID: {current_user.id if current_user else 'N/A'}")
-    print(f"🔍 [ANALYSE] User email: {current_user.email if current_user else 'N/A'}")
-    sys.stdout.flush()  # Forcer l'affichage immédiat sur Render
-    
-    if not files:
-        print("❌ [ANALYSE] ERREUR: Aucun fichier fourni")
-        sys.stdout.flush()
-        raise HTTPException(status_code=400, detail="No files provided")
-    
-    # Validate file types
-    print(f"🔍 [ANALYSE] Validation des fichiers...")
-    sys.stdout.flush()
-    for i, file in enumerate(files):
-        print(f"🔍 [ANALYSE] Fichier {i+1}: {file.filename}, Content-Type: {file.content_type}")
-        sys.stdout.flush()
-        if not file.content_type.startswith('image/'):
-            print(f"❌ [ANALYSE] ERREUR: Fichier {file.filename} n'est pas une image")
-            sys.stdout.flush()
-            raise HTTPException(
-                status_code=400, 
-                detail=f"File {file.filename} is not an image"
-            )
-    
-    print(f"✅ [ANALYSE] Validation des fichiers terminée")
-    sys.stdout.flush()
-    
     try:
+        # Logs détaillés pour Render - FORCER l'affichage immédiat
+        print("\n" + "="*80)
+        print(f"🔍 [ANALYSE] Début de l'analyse - {datetime.now().isoformat()}")
+        print(f"🔍 [ANALYSE] Patient ID: {patient_id}")
+        print(f"🔍 [ANALYSE] Nombre de fichiers: {len(files) if files else 0}")
+        print(f"🔍 [ANALYSE] Informations patient: name={patient_name}, age={patient_age}")
+        print(f"🔍 [ANALYSE] User ID: {current_user.id if current_user else 'N/A'}")
+        print(f"🔍 [ANALYSE] User email: {current_user.email if current_user else 'N/A'}")
+        sys.stdout.flush()  # Forcer l'affichage immédiat sur Render
+        
+        if not files:
+            print("❌ [ANALYSE] ERREUR: Aucun fichier fourni")
+            sys.stdout.flush()
+            raise HTTPException(status_code=400, detail="No files provided")
+        
+        # Validate file types
+        print(f"🔍 [ANALYSE] Validation des fichiers...")
+        sys.stdout.flush()
+        for i, file in enumerate(files):
+            print(f"🔍 [ANALYSE] Fichier {i+1}: {file.filename}, Content-Type: {file.content_type}")
+            sys.stdout.flush()
+            if not file.content_type.startswith('image/'):
+                print(f"❌ [ANALYSE] ERREUR: Fichier {file.filename} n'est pas une image")
+                sys.stdout.flush()
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"File {file.filename} is not an image"
+                )
+        
+        print(f"✅ [ANALYSE] Validation des fichiers terminée")
+        sys.stdout.flush()
+        
         # Créer ou mettre à jour le patient si les informations sont fournies
         from app.models.patient import Patient
         from app.services.patient_service import PatientService
