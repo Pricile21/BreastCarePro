@@ -4,6 +4,7 @@ BreastCare Pro - Main FastAPI Application
 
 from fastapi import FastAPI, Request
 import sys
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,6 +21,33 @@ app = FastAPI(
     description="API for breast cancer screening and risk assessment using AI",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
+
+# Middleware de logging ULTRA-PRÉCOCE (avant tout le reste)
+# Ce middleware capture TOUTES les requêtes, même celles qui échouent avant les autres middlewares
+@app.middleware("http")
+async def ultra_early_logging_middleware(request: Request, call_next):
+    """Logging ultra-précoce pour capturer toutes les requêtes"""
+    import sys
+    from datetime import datetime
+    print(f"\n{'#'*80}")
+    print(f"🚨 [ULTRA_EARLY] REQUÊTE REÇUE: {request.method} {request.url.path}")
+    print(f"🚨 [ULTRA_EARLY] Timestamp: {datetime.now().isoformat()}")
+    print(f"🚨 [ULTRA_EARLY] URL complète: {request.url}")
+    print(f"🚨 [ULTRA_EARLY] Client: {request.client.host if request.client else 'N/A'}")
+    print(f"🚨 [ULTRA_EARLY] Headers: {dict(request.headers)}")
+    sys.stdout.flush()
+    
+    try:
+        response = await call_next(request)
+        print(f"🚨 [ULTRA_EARLY] Réponse: {response.status_code}")
+        sys.stdout.flush()
+        return response
+    except Exception as e:
+        print(f"🚨 [ULTRA_EARLY] EXCEPTION: {type(e).__name__} - {str(e)}")
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        raise
 
 
 @app.on_event("startup")
@@ -152,6 +180,14 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 app.add_middleware(LoggingMiddleware)
 
 # CORS middleware
+# Log les origines CORS autorisées
+print(f"\n{'='*80}")
+print(f"🌐 [CORS] Configuration CORS:")
+print(f"🌐 [CORS] Origines autorisées: {settings.BACKEND_CORS_ORIGINS}")
+print(f"🌐 [CORS] BACKEND_CORS_ORIGINS env: {os.getenv('BACKEND_CORS_ORIGINS', 'NON DÉFINIE')}")
+print(f"{'='*80}\n")
+sys.stdout.flush()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
