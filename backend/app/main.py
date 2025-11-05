@@ -84,23 +84,33 @@ async def startup_event():
 # Middleware de logging pour voir toutes les requêtes
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        import sys
+        from datetime import datetime
         start_time = time.time()
         print(f"\n{'='*80}")
-        print(f"🌐 REQUÊTE REÇUE: {request.method} {request.url.path}")
-        print(f"📥 Headers: {dict(request.headers)}")
+        print(f"🌐 [MIDDLEWARE] REQUÊTE REÇUE: {request.method} {request.url.path}")
+        print(f"🌐 [MIDDLEWARE] Timestamp: {datetime.now().isoformat()}")
+        print(f"🌐 [MIDDLEWARE] Client: {request.client.host if request.client else 'N/A'}")
+        print(f"📥 [MIDDLEWARE] Headers: {dict(request.headers)}")
+        sys.stdout.flush()
         
         # IMPORTANT: Ne pas lire le body ici car cela consomme le stream
         # et empêche FastAPI de parser le JSON. Utiliser request.client.host pour info.
         if request.method == "POST":
             content_type = request.headers.get("content-type", "")
             content_length = request.headers.get("content-length", "unknown")
-            print(f"📦 Body info: Content-Type={content_type}, Length={content_length}")
+            origin = request.headers.get("origin", "N/A")
+            print(f"📦 [MIDDLEWARE] Body info: Content-Type={content_type}, Length={content_length}")
+            print(f"📦 [MIDDLEWARE] Origin: {origin}")
+            sys.stdout.flush()
         
         print(f"{'='*80}\n")
+        sys.stdout.flush()
         
         response = await call_next(request)
         process_time = time.time() - start_time
-        print(f"✅ Réponse envoyée: {response.status_code} (en {process_time:.3f}s)")
+        print(f"✅ [MIDDLEWARE] Réponse envoyée: {response.status_code} (en {process_time:.3f}s)")
+        sys.stdout.flush()
         return response
 
 # Ajouter le middleware de logging AVANT CORS

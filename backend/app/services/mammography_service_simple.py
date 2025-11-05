@@ -62,13 +62,23 @@ class MammographyService:
         """
         Analyze mammography images (simplified version)
         """
+        import sys
         try:
+            print(f"🔍 [SERVICE] Début analyze_mammography - patient_id={patient_id}, user_id={user_id}")
+            sys.stdout.flush()
+            
             # Generate analysis ID
             analysis_id = str(uuid.uuid4())
+            print(f"🔍 [SERVICE] Analysis ID généré: {analysis_id}")
+            sys.stdout.flush()
             
             # Save uploaded files and get file data with view types
+            print(f"🔍 [SERVICE] Sauvegarde des fichiers uploadés...")
+            sys.stdout.flush()
             file_data = await self._save_uploaded_files(files, analysis_id)
             file_paths = [file_info["path"] for file_info in file_data]
+            print(f"✅ [SERVICE] {len(file_paths)} fichiers sauvegardés")
+            sys.stdout.flush()
             
             # Si pas de patient_id fourni, créer un patient par défaut
             if not patient_id:
@@ -80,21 +90,33 @@ class MammographyService:
             
             # Récupérer l'UUID du patient depuis la table patients
             # La contrainte de clé étrangère utilise patients(id), pas patients(patient_id)
+            print(f"🔍 [SERVICE] Recherche du patient: patient_id={patient_id}")
+            sys.stdout.flush()
             patient = self.db.query(Patient).filter(Patient.patient_id == patient_id).first()
             if not patient:
+                print(f"❌ [SERVICE] Patient non trouvé: {patient_id}")
+                sys.stdout.flush()
                 raise HTTPException(
                     status_code=404,
                     detail=f"Patient avec patient_id='{patient_id}' non trouvé dans la base de données"
                 )
             # Utiliser l'UUID du patient (id) au lieu de patient_id pour la contrainte FK
             patient_uuid = patient.id
+            print(f"✅ [SERVICE] Patient trouvé: UUID={patient_uuid}")
+            sys.stdout.flush()
             
             # Run simplified ML analysis
             # IMPORTANT: Cette méthode peut lever une ValueError si des images sont invalides
             # Cette exception sera capturée et transformée en HTTPException sans créer d'enregistrement
+            print(f"🔍 [SERVICE] Lancement de l'analyse ML...")
+            sys.stdout.flush()
             analysis_result = await self._run_ml_analysis(file_paths)
+            print(f"✅ [SERVICE] Analyse ML terminée")
+            sys.stdout.flush()
             
             # Create analysis record
+            print(f"🔍 [SERVICE] Création de l'enregistrement d'analyse...")
+            sys.stdout.flush()
             analysis = MammographyAnalysis(
                 id=str(uuid.uuid4()),
                 analysis_id=analysis_id,
@@ -114,17 +136,23 @@ class MammographyService:
                 notes="Analyse MedSigLIP - Votre modèle best"
             )
             
+            print(f"🔍 [SERVICE] Ajout à la base de données...")
+            sys.stdout.flush()
             self.db.add(analysis)
             self.db.commit()
             self.db.refresh(analysis)
+            print(f"✅ [SERVICE] Enregistrement créé avec succès - ID: {analysis.id}")
+            sys.stdout.flush()
             
             return MammographyAnalysisResponse.from_orm(analysis)
             
         except ValueError as e:
             # Pour les erreurs de validation d'images (images invalides), ne PAS créer d'enregistrement
             # et lever l'exception directement pour que le frontend reçoive une erreur claire
-            print(f"🚨 Erreur de validation - Analyse annulée: {str(e)}")
-            print(f"🚨 Aucun enregistrement ne sera créé pour cette analyse")
+            import sys
+            print(f"🚨 [SERVICE] Erreur de validation - Analyse annulée: {str(e)}")
+            print(f"🚨 [SERVICE] Aucun enregistrement ne sera créé pour cette analyse")
+            sys.stdout.flush()
             # Relancer l'exception telle quelle pour que l'endpoint la transforme en HTTPException
             raise HTTPException(
                 status_code=400,
@@ -132,9 +160,11 @@ class MammographyService:
             )
         except Exception as e:
             # Pour les autres erreurs (erreurs techniques), créer un enregistrement FAILED
-            print(f"❌ Erreur technique lors de l'analyse: {str(e)}")
+            import sys
+            print(f"❌ [SERVICE] Erreur technique lors de l'analyse: {str(e)}")
             import traceback
             traceback.print_exc()
+            sys.stdout.flush()
             
             analysis = MammographyAnalysis(
                 id=str(uuid.uuid4()),

@@ -7,6 +7,8 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 import os
+import sys
+from datetime import datetime
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
@@ -29,19 +31,37 @@ async def analyze_mammography(
     """
     Analyze mammography images and return BI-RADS classification
     """
-    print(f"🔍 Analyse demandée - Patient ID: {patient_id}, Fichiers: {len(files)}")
-    print(f"   Informations patient: name={patient_name}, age={patient_age}")
+    # Logs détaillés pour Render - FORCER l'affichage immédiat
+    print("\n" + "="*80)
+    print(f"🔍 [ANALYSE] Début de l'analyse - {datetime.now().isoformat()}")
+    print(f"🔍 [ANALYSE] Patient ID: {patient_id}")
+    print(f"🔍 [ANALYSE] Nombre de fichiers: {len(files) if files else 0}")
+    print(f"🔍 [ANALYSE] Informations patient: name={patient_name}, age={patient_age}")
+    print(f"🔍 [ANALYSE] User ID: {current_user.id if current_user else 'N/A'}")
+    print(f"🔍 [ANALYSE] User email: {current_user.email if current_user else 'N/A'}")
+    sys.stdout.flush()  # Forcer l'affichage immédiat sur Render
     
     if not files:
+        print("❌ [ANALYSE] ERREUR: Aucun fichier fourni")
+        sys.stdout.flush()
         raise HTTPException(status_code=400, detail="No files provided")
     
     # Validate file types
-    for file in files:
+    print(f"🔍 [ANALYSE] Validation des fichiers...")
+    sys.stdout.flush()
+    for i, file in enumerate(files):
+        print(f"🔍 [ANALYSE] Fichier {i+1}: {file.filename}, Content-Type: {file.content_type}")
+        sys.stdout.flush()
         if not file.content_type.startswith('image/'):
+            print(f"❌ [ANALYSE] ERREUR: Fichier {file.filename} n'est pas une image")
+            sys.stdout.flush()
             raise HTTPException(
                 status_code=400, 
                 detail=f"File {file.filename} is not an image"
             )
+    
+    print(f"✅ [ANALYSE] Validation des fichiers terminée")
+    sys.stdout.flush()
     
     try:
         # Créer ou mettre à jour le patient si les informations sont fournies
@@ -78,17 +98,30 @@ async def analyze_mammography(
                 patient_service.create_patient(patient_data, user_id=current_user.id)
                 print(f"✅ Patient créé: {patient_id}")
         
+        print(f"🔍 [ANALYSE] Initialisation du MammographyService...")
+        sys.stdout.flush()
         mammography_service = MammographyService(db)
+        print(f"✅ [ANALYSE] MammographyService initialisé, lancement de l'analyse ML...")
+        sys.stdout.flush()
+        
         result = await mammography_service.analyze_mammography(files, patient_id, current_user.id)
+        
+        print(f"✅ [ANALYSE] Analyse terminée avec succès - ID: {result.id if hasattr(result, 'id') else 'N/A'}")
+        print("="*80 + "\n")
+        sys.stdout.flush()
+        
         return result
     except HTTPException as e:
         # HTTPException est déjà correctement formatée, la relancer telle quelle
+        print(f"❌ [ANALYSE] HTTPException: {e.status_code} - {e.detail}")
+        sys.stdout.flush()
         raise e
     except Exception as e:
         # Pour les autres exceptions, retourner une erreur 500
-        print(f"❌ Erreur inattendue lors de l'analyse: {str(e)}")
+        print(f"❌ [ANALYSE] ERREUR INATTENDUE: {str(e)}")
         import traceback
         traceback.print_exc()
+        sys.stdout.flush()
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
