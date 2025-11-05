@@ -56,6 +56,10 @@ RUN pip install --no-cache-dir --default-timeout=1000 tensorflow==2.15.0 && \
 # Copy application code
 COPY . .
 
+# Copy articles directory to /articles (for Render deployment)
+# Articles are now in backend/articles, so they'll be copied with COPY . .
+RUN if [ -d "articles" ]; then cp -r articles /articles; fi || mkdir -p /articles
+
 # Create data directory for uploads
 RUN mkdir -p /app/data /app/uploads /app/static
 
