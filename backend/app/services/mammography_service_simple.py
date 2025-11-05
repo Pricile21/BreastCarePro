@@ -835,24 +835,30 @@ class MammographyService:
         except ValueError as e:
             # Les erreurs ValueError (modèle non chargé, images invalides) doivent être propagées
             import sys
-            error_msg = str(e) if e else "Erreur de validation inconnue"
+            error_msg = str(e) if e and str(e).strip() else "Erreur de validation inconnue"
             print(f"🚨 [ML_ANALYSIS] Erreur de validation: {error_msg}")
             sys.stdout.flush()
             raise HTTPException(status_code=400, detail=error_msg)
-        except HTTPException:
-            # Relancer les HTTPException telles quelles
-            raise
+        except HTTPException as he:
+            # Relancer les HTTPException mais s'assurer qu'elles ont un message
+            if not he.detail or not str(he.detail).strip():
+                he.detail = f"Erreur HTTP {he.status_code}: Aucun message d'erreur disponible"
+            raise he
         except Exception as e:
             # Pour les autres erreurs techniques, lever une exception plutôt que de retourner un résultat en mode démo
             import sys
-            error_msg = str(e) if e else "Erreur technique inconnue"
+            error_msg = str(e).strip() if e and str(e).strip() else "Erreur technique inconnue"
             error_type = type(e).__name__ if e else "UnknownError"
             print(f"❌ [ML_ANALYSIS] ERREUR TECHNIQUE ({error_type}): {error_msg}")
             import traceback
-            traceback.print_exc()
+            full_traceback = traceback.format_exc()
+            print(f"❌ [ML_ANALYSIS] Traceback complet:\n{full_traceback}")
             sys.stdout.flush()
             
-            # Ne PAS retourner de résultat en mode démo - lever une exception avec un message clair
+            # Toujours avoir un message d'erreur clair
+            if not error_msg or error_msg == "Erreur technique inconnue":
+                error_msg = f"Exception de type {error_type} sans message. Vérifiez les logs du serveur pour plus de détails."
+            
             detail_msg = f"Erreur technique lors de l'analyse: {error_msg}. Le modèle MedSigLIP n'a pas pu analyser les images. Type d'erreur: {error_type}. Veuillez réessayer ou contacter le support."
             raise HTTPException(status_code=500, detail=detail_msg)
     

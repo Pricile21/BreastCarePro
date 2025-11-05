@@ -112,17 +112,28 @@ async def analyze_mammography(
         
         return result
     except HTTPException as e:
-        # HTTPException est déjà correctement formatée, la relancer telle quelle
-        print(f"❌ [ANALYSE] HTTPException: {e.status_code} - {e.detail}")
+        # HTTPException est déjà correctement formatée, mais s'assurer qu'elle a un message
+        error_detail = str(e.detail).strip() if e.detail and str(e.detail).strip() else f"Erreur HTTP {e.status_code} sans message"
+        print(f"❌ [ANALYSE] HTTPException: {e.status_code} - {error_detail}")
         sys.stdout.flush()
+        if not e.detail or not str(e.detail).strip():
+            e.detail = error_detail
         raise e
     except Exception as e:
         # Pour les autres exceptions, retourner une erreur 500
-        print(f"❌ [ANALYSE] ERREUR INATTENDUE: {str(e)}")
+        error_msg = str(e).strip() if e and str(e).strip() else "Erreur inconnue"
+        error_type = type(e).__name__ if e else "UnknownError"
+        print(f"❌ [ANALYSE] ERREUR INATTENDUE ({error_type}): {error_msg}")
         import traceback
-        traceback.print_exc()
+        full_traceback = traceback.format_exc()
+        print(f"❌ [ANALYSE] Traceback complet:\n{full_traceback}")
         sys.stdout.flush()
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+        
+        # Toujours avoir un message d'erreur
+        if not error_msg or error_msg == "Erreur inconnue":
+            error_msg = f"Exception de type {error_type} sans message détaillé. Vérifiez les logs du serveur."
+        
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'analyse: {error_msg} (Type: {error_type})")
 
 
 @router.get("/image/{file_path:path}")
