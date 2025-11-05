@@ -78,6 +78,26 @@ async def startup_event():
                 print(f"✅ {center_count} centres déjà dans la base")
         finally:
             db.close()
+        
+        # Précharger le modèle ML au démarrage pour éviter le délai lors de la première requête
+        print("\n" + "="*80)
+        print("🤖 PRÉCHARGEMENT DU MODÈLE ML...")
+        print("="*80)
+        try:
+            from app.services.mammography_service_simple import get_ml_model
+            print("⏳ Chargement du modèle MedSigLIP (cela peut prendre plusieurs minutes la première fois)...")
+            import sys
+            sys.stdout.flush()
+            ml_model = get_ml_model()
+            print("✅ Modèle ML préchargé avec succès!")
+            print("="*80 + "\n")
+            sys.stdout.flush()
+        except Exception as e:
+            print(f"⚠️  Erreur lors du préchargement du modèle ML: {e}")
+            print("⚠️  Le modèle sera chargé à la première requête (plus lent)")
+            import traceback
+            traceback.print_exc()
+            print("="*80 + "\n")
             
     except Exception as e:
         print(f"⚠️  Erreur lors de l'initialisation: {e}")

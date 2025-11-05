@@ -16,6 +16,21 @@ from app.schemas.mammography import MammographyAnalysisResponse
 from app.ml.inference_service_simple import MedSigLIPInferenceService
 from app.models.patient import Patient
 
+# Singleton global pour le modèle ML (chargé une seule fois au démarrage)
+_ml_model_singleton = None
+
+def get_ml_model():
+    """Récupère ou crée le singleton du modèle ML"""
+    global _ml_model_singleton
+    if _ml_model_singleton is None:
+        print("🔧 [SINGLETON] Création du modèle ML (première fois)...")
+        import sys
+        sys.stdout.flush()
+        _ml_model_singleton = MedSigLIPInferenceService()
+        print("✅ [SINGLETON] Modèle ML créé et mis en cache")
+        sys.stdout.flush()
+    return _ml_model_singleton
+
 
 class MammographyService:
     """
@@ -25,7 +40,12 @@ class MammographyService:
     def __init__(self, db: Session):
         self.db = db
         print("🔧 Initialisation du MammographyService...")
-        self.ml_model = MedSigLIPInferenceService() # Now using the real MedSigLIP model
+        import sys
+        sys.stdout.flush()
+        # Utiliser le singleton pour éviter de recharger le modèle à chaque requête
+        self.ml_model = get_ml_model()
+        print("✅ [SINGLETON] MammographyService utilise le modèle ML en cache")
+        sys.stdout.flush()
         
         # VÉRIFICATION CRITIQUE: Le modèle DOIT être chargé, sinon erreur au démarrage
         if not self.ml_model:
@@ -616,6 +636,7 @@ class MammographyService:
             if self.ml_model and self.ml_model.use_direct_classifiers and self.ml_model.bi_rads_classifier is not None:
                 print("🎯🎯🎯 MODE ACTIF: Classificateurs directs (VOTRE MODÈLE BEST)")
                 print("   ✅ Vos classificateurs BI-RADS et Densité seront utilisés")
+                sys.stdout.flush()
                 
                 # Analyser chaque image avec vos classificateurs séquentiellement
                 # NOTE: Traitement séquentiel car PyTorch n'est pas thread-safe
@@ -624,25 +645,35 @@ class MammographyService:
                 detected_regions = []
                 
                 for i, image_path in enumerate(file_paths):
-                    print(f"🔍 Analyse de l'image {i+1}/{len(file_paths)} avec VOTRE modèle: {os.path.basename(image_path)}")
+                    print(f"\n🔍 [ML_ANALYSIS] Image {i+1}/{len(file_paths)}: {os.path.basename(image_path)}")
+                    sys.stdout.flush()
                     
                     try:
                         # Charger l'image et utiliser _predict_with_model directement
+                        print(f"🔍 [ML_ANALYSIS] Chargement et prétraitement de l'image {i+1}...")
+                        sys.stdout.flush()
                         image_array = self.ml_model._load_and_preprocess_image(image_path)
                         if image_array is None:
                             # ARRÊTER IMMÉDIATEMENT si une image est invalide
                             print(f"\n   🚨🚨🚨 ARRÊT IMMÉDIAT DE L'ANALYSE")
                             print(f"   ❌ Image {i+1}/{total_images} rejetée - ne semble pas être une mammographie valide")
                             print(f"   🚨 L'analyse est annulée pour éviter des résultats incorrects")
+                            sys.stdout.flush()
                             raise ValueError(
                                 f"Analyse annulée: L'image {i+1} (sur {total_images}) a été rejetée car elle ne semble pas être une mammographie valide. "
                                 f"Toutes les images doivent être des mammographies valides pour effectuer l'analyse. "
                                 f"Veuillez uploader uniquement des images de mammographie."
                             )
                         
+                        print(f"✅ [ML_ANALYSIS] Image {i+1} chargée, lancement de la prédiction ML...")
+                        sys.stdout.flush()
                         bi_rads_pred, bi_rads_conf, density_pred, density_conf = self.ml_model._predict_with_model(image_array)
+                        print(f"✅ [ML_ANALYSIS] Prédiction ML terminée pour l'image {i+1}: BI-RADS={bi_rads_pred}, Densité={density_pred}")
+                        sys.stdout.flush()
                         
                         # Chercher les zones d'intérêt si disponible
+                        print(f"🔍 [ML_ANALYSIS] Recherche des zones d'intérêt pour l'image {i+1}...")
+                        sys.stdout.flush()
                         image_id = self.ml_model._extract_image_id_from_path(image_path)
                         regions = self.ml_model._get_regions_from_annotations(image_id, image_path)
                         
@@ -662,12 +693,18 @@ class MammographyService:
                             },
                             'detected_regions': regions
                         })
-                        print(f"   ✅ Image {i+1}/{len(file_paths)} analysée avec succès")
+                        print(f"✅ [ML_ANALYSIS] Image {i+1}/{len(file_paths)} analysée avec succès")
+                        sys.stdout.flush()
                     except ValueError:
                         # Relancer les ValueError (erreurs de validation d'images)
+                        print(f"❌ [ML_ANALYSIS] ValueError pour l'image {i+1}, propagation...")
+                        sys.stdout.flush()
                         raise
                     except Exception as e:
-                        print(f"   ⚠️ Erreur lors du traitement de l'image {i+1}: {e}")
+                        print(f"❌ [ML_ANALYSIS] Erreur lors du traitement de l'image {i+1}: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        sys.stdout.flush()
                         # Continuer avec les autres images si une seule échoue
             
             # Note: Le mode 2 (modèle standard) ne devrait jamais être atteint si votre modèle est correctement chargé
@@ -778,13 +815,17 @@ class MammographyService:
             
         except ValueError as e:
             # Les erreurs ValueError (modèle non chargé, images invalides) doivent être propagées
-            print(f"🚨 Erreur de validation: {e}")
+            import sys
+            print(f"🚨 [ML_ANALYSIS] Erreur de validation: {e}")
+            sys.stdout.flush()
             raise e
         except Exception as e:
             # Pour les autres erreurs techniques, lever une exception plutôt que de retourner un résultat en mode démo
-            print(f"❌ Erreur technique lors de l'analyse ML: {e}")
+            import sys
+            print(f"❌ [ML_ANALYSIS] ERREUR TECHNIQUE: {e}")
             import traceback
             traceback.print_exc()
+            sys.stdout.flush()
             
             # Ne PAS retourner de résultat en mode démo - lever une exception
             raise HTTPException(
