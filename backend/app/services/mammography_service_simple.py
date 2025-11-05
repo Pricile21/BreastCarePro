@@ -136,35 +136,54 @@ class MammographyService:
             
             # Create analysis record
             print(f"🔍 [SERVICE] Création de l'enregistrement d'analyse...")
-            sys.stdout.flush()
-            analysis = MammographyAnalysis(
-                id=str(uuid.uuid4()),
-                analysis_id=analysis_id,
-                patient_id=patient_uuid,  # Utiliser l'UUID du patient (id) pour la FK
-                user_id=user_id,
-                bi_rads_category=analysis_result["bi_rads_category"],
-                confidence_score=analysis_result["confidence_score"],
-                breast_density=analysis_result["breast_density"],
-                model_version=analysis_result["model_version"],
-                processing_time=1.5,  # Simulated
-                status=AnalysisStatus.COMPLETED,
-                original_files=file_data,
-                processed_images=file_data,
-                annotations={},
-                findings=analysis_result["findings"],
-                recommendations=analysis_result["recommendations"],
-                notes="Analyse MedSigLIP - Votre modèle best"
-            )
-            
-            print(f"🔍 [SERVICE] Ajout à la base de données...")
-            sys.stdout.flush()
-            self.db.add(analysis)
-            self.db.commit()
-            self.db.refresh(analysis)
-            print(f"✅ [SERVICE] Enregistrement créé avec succès - ID: {analysis.id}")
+            print(f"🔍 [SERVICE] Résultats ML reçus: BI-RADS={analysis_result.get('bi_rads_category')}, Confidence={analysis_result.get('confidence_score')}, Density={analysis_result.get('breast_density')}")
             sys.stdout.flush()
             
-            return MammographyAnalysisResponse.from_orm(analysis)
+            try:
+                analysis = MammographyAnalysis(
+                    id=str(uuid.uuid4()),
+                    analysis_id=analysis_id,
+                    patient_id=patient_uuid,  # Utiliser l'UUID du patient (id) pour la FK
+                    user_id=user_id,
+                    bi_rads_category=analysis_result["bi_rads_category"],
+                    confidence_score=analysis_result["confidence_score"],
+                    breast_density=analysis_result["breast_density"],
+                    model_version=analysis_result["model_version"],
+                    processing_time=1.5,  # Simulated
+                    status=AnalysisStatus.COMPLETED,
+                    original_files=file_data,
+                    processed_images=file_data,
+                    annotations={},
+                    findings=analysis_result["findings"],
+                    recommendations=analysis_result["recommendations"],
+                    notes="Analyse MedSigLIP - Votre modèle best"
+                )
+                
+                print(f"🔍 [SERVICE] Objet MammographyAnalysis créé, ajout à la base de données...")
+                print(f"🔍 [SERVICE] Analyse object: BI-RADS={analysis.bi_rads_category}, Confidence={analysis.confidence_score}, Status={analysis.status}")
+                sys.stdout.flush()
+                
+                self.db.add(analysis)
+                self.db.commit()
+                self.db.refresh(analysis)
+                print(f"✅ [SERVICE] Enregistrement créé avec succès - ID: {analysis.id}")
+                print(f"✅ [SERVICE] Après commit: BI-RADS={analysis.bi_rads_category}, Confidence={analysis.confidence_score}, Status={analysis.status}")
+                sys.stdout.flush()
+                
+                print(f"🔍 [SERVICE] Conversion en MammographyAnalysisResponse...")
+                sys.stdout.flush()
+                response = MammographyAnalysisResponse.from_orm(analysis)
+                print(f"✅ [SERVICE] Réponse créée: BI-RADS={response.bi_rads_category if hasattr(response, 'bi_rads_category') else 'N/A'}, Confidence={response.confidence_score if hasattr(response, 'confidence_score') else 'N/A'}")
+                sys.stdout.flush()
+                
+                return response
+            except Exception as create_error:
+                print(f"❌ [SERVICE] Erreur lors de la création de l'enregistrement: {create_error}")
+                import traceback
+                traceback.print_exc()
+                sys.stdout.flush()
+                # Relever l'erreur pour que le bloc except global la capture
+                raise
             
         except ValueError as e:
             # Pour les erreurs de validation d'images (images invalides), ne PAS créer d'enregistrement
