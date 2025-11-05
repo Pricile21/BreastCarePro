@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable static optimization for dynamic pages
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
