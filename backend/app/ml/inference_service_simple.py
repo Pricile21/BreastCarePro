@@ -892,8 +892,16 @@ class MedSigLIPInferenceService:
                 print("   ℹ️  Vos classificateurs bi_rads_classifier et density_classifier SONT utilisés")
                 print("   ⚠️  Les embeddings sont approximatifs mais vos classificateurs sont bien ceux que vous avez entraînés")
                 try:
+                    # Vérifier que _embedding_dim est défini
+                    if not hasattr(self, '_embedding_dim') or self._embedding_dim is None:
+                        print(f"   ⚠️ _embedding_dim non défini, utilisation de la valeur par défaut 1152")
+                        self._embedding_dim = 1152
+                    
                     # Extraire les features de l'image (approximation)
                     embedding = self._extract_embedding_features(image_array)
+                    
+                    if embedding is None:
+                        raise ValueError("L'extraction de features a échoué")
                     
                     # Vérifier la dimension de l'embedding
                     if embedding.shape[1] != self._embedding_dim:

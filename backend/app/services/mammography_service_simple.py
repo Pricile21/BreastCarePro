@@ -816,22 +816,26 @@ class MammographyService:
         except ValueError as e:
             # Les erreurs ValueError (modèle non chargé, images invalides) doivent être propagées
             import sys
-            print(f"🚨 [ML_ANALYSIS] Erreur de validation: {e}")
+            error_msg = str(e) if e else "Erreur de validation inconnue"
+            print(f"🚨 [ML_ANALYSIS] Erreur de validation: {error_msg}")
             sys.stdout.flush()
-            raise e
+            raise HTTPException(status_code=400, detail=error_msg)
+        except HTTPException:
+            # Relancer les HTTPException telles quelles
+            raise
         except Exception as e:
             # Pour les autres erreurs techniques, lever une exception plutôt que de retourner un résultat en mode démo
             import sys
-            print(f"❌ [ML_ANALYSIS] ERREUR TECHNIQUE: {e}")
+            error_msg = str(e) if e else "Erreur technique inconnue"
+            error_type = type(e).__name__ if e else "UnknownError"
+            print(f"❌ [ML_ANALYSIS] ERREUR TECHNIQUE ({error_type}): {error_msg}")
             import traceback
             traceback.print_exc()
             sys.stdout.flush()
             
-            # Ne PAS retourner de résultat en mode démo - lever une exception
-            raise HTTPException(
-                status_code=500,
-                detail=f"Erreur technique lors de l'analyse: {str(e)}. Le modèle MedSigLIP n'a pas pu analyser les images. Veuillez réessayer ou contacter le support."
-            )
+            # Ne PAS retourner de résultat en mode démo - lever une exception avec un message clair
+            detail_msg = f"Erreur technique lors de l'analyse: {error_msg}. Le modèle MedSigLIP n'a pas pu analyser les images. Type d'erreur: {error_type}. Veuillez réessayer ou contacter le support."
+            raise HTTPException(status_code=500, detail=detail_msg)
     
     def _generate_recommendations(self, bi_rads_pred: str, confidence: float) -> str:
         """
