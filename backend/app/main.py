@@ -27,12 +27,15 @@ async def startup_event():
     """
     Initialize database and seed initial data on startup
     """
+    import os
     print("\n" + "="*80)
     print("🚀 DÉMARRAGE DU BACKEND BREASTCARE")
     print("="*80)
     print(f"📡 Serveur écoute sur: http://0.0.0.0:8000")
     print(f"📚 Documentation: http://localhost:8000/docs")
     print(f"🏥 Health check: http://localhost:8000/health")
+    print(f"🌐 CORS Origins autorisées: {settings.BACKEND_CORS_ORIGINS}")
+    print(f"🌐 BACKEND_CORS_ORIGINS env: {os.getenv('BACKEND_CORS_ORIGINS', 'NON DÉFINIE')}")
     print("="*80 + "\n")
     
     try:

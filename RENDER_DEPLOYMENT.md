@@ -124,7 +124,8 @@ Dans Render Dashboard → breastcare-backend → Environment :
 | DATABASE_URL | Auto | Injecté automatiquement par Render |
 | SECRET_KEY | Auto | Généré automatiquement |
 | ENVIRONMENT | production | Environnement de production |
-| **BACKEND_CORS_ORIGINS** | `https://votre-frontend.vercel.app` | ⚠️ **À définir manuellement après déploiement** - URL de votre frontend (séparées par virgules si plusieurs) |
+| **BACKEND_CORS_ORIGINS** | `https://breastcare-frontend.onrender.com,http://localhost:3000` | ⚠️ **CRITIQUE - À définir manuellement** - URLs autorisées pour CORS (séparées par virgules) |
+| **HF_TOKEN** | `votre-token-huggingface` | ⚠️ **Requis pour le modèle ML** - Token Hugging Face pour télécharger MedSigLIP |
 
 ## Limitations importantes
 
