@@ -37,28 +37,49 @@ async def get_current_professional(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get current professional information - VERSION SIMPLIFIÉE
+    Get current professional information - RÉCUPÈRE LE VRAI PROFESSIONNEL
     """
     try:
         print(f"🔍 Endpoint /me appelé pour user: {current_user.email}")
         
-        # SOLUTION SIMPLE: Retourner un profil professionnel factice
-        # pour éviter les erreurs de base de données
-        return {
-            "id": "prof-001",
-            "full_name": current_user.full_name,
-            "specialty": "Radiologie",
-            "license_number": "LIC-12345678",
-            "phone_number": "+229 XX XX XX XX",
-            "email": current_user.email,
-            "address": "Cotonou, Bénin",
-            "is_active": True,
-            "is_verified": True,
-            "created_at": "2024-01-01T00:00:00Z"
-        }
+        # Chercher le professionnel dans la table professionals par email
+        professional = db.query(Professional).filter(Professional.email == current_user.email).first()
+        
+        if professional:
+            print(f"✅ Professionnel trouvé: {professional.full_name} (id: {professional.id})")
+            return {
+                "id": professional.id,
+                "full_name": professional.full_name,
+                "specialty": professional.specialty,
+                "license_number": professional.license_number,
+                "phone_number": professional.phone_number or "N/A",
+                "email": professional.email,
+                "address": professional.address or "N/A",
+                "is_active": professional.is_active,
+                "is_verified": professional.is_verified,
+                "created_at": professional.created_at.isoformat() if professional.created_at else "2024-01-01T00:00:00Z"
+            }
+        else:
+            # Si le professionnel n'existe pas dans la table professionals,
+            # retourner les informations de l'utilisateur connecté
+            print(f"⚠️ Professionnel non trouvé pour {current_user.email}, utilisation des données utilisateur")
+            return {
+                "id": f"prof-{current_user.id}",
+                "full_name": current_user.full_name,
+                "specialty": "Professionnel de santé",
+                "license_number": "N/A",
+                "phone_number": current_user.phone or "N/A",
+                "email": current_user.email,
+                "address": "N/A",
+                "is_active": current_user.is_active,
+                "is_verified": current_user.is_verified,
+                "created_at": "2024-01-01T00:00:00Z"
+            }
         
     except Exception as e:
         print(f"❌ Erreur dans /me: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 

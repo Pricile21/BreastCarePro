@@ -79,44 +79,51 @@ class AccessRequestService:
         
         print(f"🔧 Approbation de la demande d'accès pour {access_request.email}")
         
+        # Vérifier si le professionnel existe déjà
+        existing_professional = self.db.query(Professional).filter(Professional.email == access_request.email).first()
+        professional = existing_professional
+        
+        if not existing_professional:
+            # Créer le professionnel
+            professional = Professional(
+                id=f"prof-{uuid.uuid4().hex[:8]}",
+                full_name=access_request.full_name,
+                specialty=access_request.specialty,
+                license_number=access_request.license_number,
+                phone_number=access_request.phone_number,
+                email=access_request.email,
+                address=access_request.hospital_clinic,
+                is_active=True,
+                is_verified=True
+            )
+            self.db.add(professional)
+            self.db.commit()
+            self.db.refresh(professional)
+            print(f"✅ Professionnel créé: {professional.id}")
+        else:
+            print(f"✅ Professionnel existe déjà: {professional.id}")
+        
         # Vérifier si l'utilisateur existe déjà
         existing_user = self.db.query(User).filter(User.email == access_request.email).first()
         if existing_user:
-            # L'utilisateur existe déjà, mettre à jour le type si nécessaire
+            # L'utilisateur existe déjà, mettre à jour le type et professional_id si nécessaire
             print(f"✅ Utilisateur existe déjà pour {access_request.email}")
+            updated = False
             if existing_user.user_type != "professional":
                 existing_user.user_type = "professional"
+                updated = True
+            if existing_user.professional_id != professional.id:
+                existing_user.professional_id = professional.id
+                updated = True
+            # Mettre à jour le nom si différent
+            if existing_user.full_name != access_request.full_name:
+                existing_user.full_name = access_request.full_name
+                updated = True
+            if updated:
                 self.db.commit()
-            # Marquer la demande comme approuvée
-            access_request.status = "approved"
-            access_request.reviewed_by = admin_user_id
-            access_request.reviewed_at = datetime.utcnow()
-            access_request.admin_notes = admin_notes
+                self.db.refresh(existing_user)
+                print(f"✅ Utilisateur mis à jour: professional_id={professional.id}")
         else:
-            # Vérifier si le professionnel existe déjà
-            existing_professional = self.db.query(Professional).filter(Professional.email == access_request.email).first()
-            professional = existing_professional
-            
-            if not existing_professional:
-                # Créer le professionnel
-                professional = Professional(
-                    id=f"prof-{uuid.uuid4().hex[:8]}",
-                    full_name=access_request.full_name,
-                    specialty=access_request.specialty,
-                    license_number=access_request.license_number,
-                    phone_number=access_request.phone_number,
-                    email=access_request.email,
-                    address=access_request.hospital_clinic,
-                    is_active=True,
-                    is_verified=True
-                )
-                self.db.add(professional)
-                self.db.commit()
-                self.db.refresh(professional)
-                print(f"✅ Professionnel créé: {professional.id}")
-            else:
-                print(f"✅ Professionnel existe déjà: {professional.id}")
-            
             # Créer un nouvel utilisateur avec user_type="professional"
             new_user = User(
                 id=f"user-{uuid.uuid4().hex[:8]}",
@@ -126,16 +133,16 @@ class AccessRequestService:
                 is_active=True,
                 is_verified=True,
                 user_type="professional",
-                professional_id=professional.id if professional else None
+                professional_id=professional.id
             )
             self.db.add(new_user)
-            print(f"✅ Utilisateur créé pour {access_request.email} (Type: professional)")
-            
-            # Marquer la demande comme approuvée
-            access_request.status = "approved"
-            access_request.reviewed_by = admin_user_id
-            access_request.reviewed_at = datetime.utcnow()
-            access_request.admin_notes = admin_notes
+            print(f"✅ Utilisateur créé pour {access_request.email} (Type: professional, professional_id: {professional.id})")
+        
+        # Marquer la demande comme approuvée
+        access_request.status = "approved"
+        access_request.reviewed_by = admin_user_id
+        access_request.reviewed_at = datetime.utcnow()
+        access_request.admin_notes = admin_notes
         
         self.db.commit()
         self.db.refresh(access_request)

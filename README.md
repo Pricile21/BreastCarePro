@@ -1,12 +1,5 @@
 # BreastCare - Plateforme d'Analyse Mammographique avec IA
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](https://www.docker.com/)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15.0-FF6F00?logo=tensorflow)](https://www.tensorflow.org/)
-[![Python](https://img.shields.io/badge/Python-3.10-3776AB?logo=python)](https://www.python.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 
 **BreastCare** est une plateforme web complète dédiée à l'analyse de mammographies assistée par intelligence artificielle. Le système permet aux professionnels de santé d'uploader des mammographies, d'obtenir des analyses automatiques basées sur l'IA, et de gérer efficacement les dossiers patients.
 

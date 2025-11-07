@@ -443,23 +443,17 @@ export function useCurrentProfessional() {
       setLoading(true);
       setError(null);
       
-      // Récupérer les vraies données du professionnel
-      const professionalData = await apiClient.request('/real-professional');
+      // Récupérer les vraies données du professionnel connecté
+      // Utiliser l'endpoint /professionals/me qui récupère les données de l'utilisateur connecté
+      const professionalData = await apiClient.getCurrentProfessional();
+      console.log("✅ Données professionnel récupérées:", professionalData);
       setProfessional(professionalData);
     } catch (err) {
-      console.log("Erreur API, utilisation des données factices");
-      // Fallback avec les bonnes données
-      const mockProfessional = {
-        id: "prof-123",
-        full_name: "Dr GANGBE Pricile",
-        specialty: "Nuclear Medicine",
-        license_number: "MED123454",
-        phone_number: "+2290161802144",
-        email: "pricilegangbe@gmail.com",
-        address: "CHU",
-        is_active: true
-      };
-      setProfessional(mockProfessional);
+      console.error("❌ Erreur lors de la récupération du professionnel:", err);
+      setError(err instanceof Error ? err.message : "Erreur lors de la récupération du professionnel");
+      // Ne plus utiliser de données mockées - laisser professional à null
+      // Le composant utilisera les données de l'utilisateur via useAuth() en fallback
+      setProfessional(null);
     } finally {
       setLoading(false);
     }

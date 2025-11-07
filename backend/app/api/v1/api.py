@@ -362,31 +362,23 @@ async def clean_database():
         db.close()
 
 @api_router.get("/real-professional")
-async def get_real_professional():
+async def get_real_professional(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Récupérer les vraies données du professionnel connecté"""
-    from app.db.session import SessionLocal
-    from sqlalchemy import text
+    from app.models.professional import Professional
     
-    db = SessionLocal()
     try:
-        # Récupérer les données du professionnel depuis la DB
-        professional = db.execute(text("""
-            SELECT 
-                p.full_name,
-                p.specialty,
-                p.license_number,
-                p.phone_number,
-                p.email,
-                p.address,
-                p.is_active
-            FROM professionals p
-            WHERE p.email = 'pricilegangbe@gmail.com'
-            LIMIT 1
-        """)).fetchone()
+        print(f"🔍 Endpoint /real-professional appelé pour user: {current_user.email}")
+        
+        # Chercher le professionnel par email de l'utilisateur connecté
+        professional = db.query(Professional).filter(Professional.email == current_user.email).first()
         
         if professional:
+            print(f"✅ Professionnel trouvé: {professional.full_name} (id: {professional.id})")
             return {
-                "id": "prof-123",
+                "id": professional.id,
                 "full_name": professional.full_name,
                 "specialty": professional.specialty,
                 "license_number": professional.license_number,
@@ -396,29 +388,32 @@ async def get_real_professional():
                 "is_active": professional.is_active
             }
         else:
-            # Fallback si pas trouvé
+            # Si le professionnel n'existe pas dans la table professionals,
+            # retourner les informations de l'utilisateur connecté
+            print(f"⚠️ Professionnel non trouvé pour {current_user.email}, utilisation des données utilisateur")
             return {
-                "id": "prof-123",
-                "full_name": "Dr GANGBE Pricile",
-                "specialty": "Nuclear Medicine",
-                "license_number": "MED123454",
-                "phone_number": "+2290161802144",
-                "email": "pricilegangbe@gmail.com",
-                "address": "CHU",
-                "is_active": True
+                "id": f"prof-{current_user.id}",
+                "full_name": current_user.full_name,
+                "specialty": "Professionnel de santé",
+                "license_number": "N/A",
+                "phone_number": current_user.phone or "N/A",
+                "email": current_user.email,
+                "address": "N/A",
+                "is_active": current_user.is_active
             }
         
     except Exception as e:
-        print(f"Erreur lors de la récupération du professionnel: {e}")
+        print(f"❌ Erreur lors de la récupération du professionnel: {e}")
+        import traceback
+        traceback.print_exc()
+        # En cas d'erreur, retourner les données de l'utilisateur connecté
         return {
-            "id": "prof-123",
-            "full_name": "Dr GANGBE Pricile",
-            "specialty": "Nuclear Medicine",
-            "license_number": "MED123454",
-            "phone_number": "+2290161802144",
-            "email": "pricilegangbe@gmail.com",
-            "address": "CHU",
-            "is_active": True
+            "id": f"prof-{current_user.id}",
+            "full_name": current_user.full_name,
+            "specialty": "Professionnel de santé",
+            "license_number": "N/A",
+            "phone_number": current_user.phone or "N/A",
+            "email": current_user.email,
+            "address": "N/A",
+            "is_active": current_user.is_active
         }
-    finally:
-        db.close()

@@ -200,16 +200,6 @@ class AdminService:
         
         print(f"🔧 Création du compte pour {access_request.email}")
         
-        # Vérifier si l'utilisateur existe déjà
-        existing_user = self.db.query(User).filter(User.email == access_request.email).first()
-        if existing_user:
-            print(f"✅ Utilisateur existe déjà pour {access_request.email}")
-            # Mettre à jour le user_type si nécessaire
-            if existing_user.user_type != "professional":
-                existing_user.user_type = "professional"
-                self.db.commit()
-            return existing_user
-        
         # Vérifier si le professionnel existe déjà
         existing_professional = self.db.query(Professional).filter(Professional.email == access_request.email).first()
         professional = existing_professional
@@ -234,6 +224,22 @@ class AdminService:
             print(f"✅ Professionnel créé: {professional.id}")
         else:
             print(f"✅ Professionnel existe déjà: {professional.id}")
+        
+        # Vérifier si l'utilisateur existe déjà
+        existing_user = self.db.query(User).filter(User.email == access_request.email).first()
+        if existing_user:
+            print(f"✅ Utilisateur existe déjà pour {access_request.email}")
+            # Mettre à jour le user_type et professional_id si nécessaire
+            if existing_user.user_type != "professional" or existing_user.professional_id != professional.id:
+                existing_user.user_type = "professional"
+                existing_user.professional_id = professional.id
+                # Mettre à jour le nom si différent
+                if existing_user.full_name != access_request.full_name:
+                    existing_user.full_name = access_request.full_name
+                self.db.commit()
+                self.db.refresh(existing_user)
+                print(f"✅ Utilisateur mis à jour: professional_id={professional.id}")
+            return existing_user
         
         # Créer aussi un User pour l'authentification, lié au professionnel
         user = User(
