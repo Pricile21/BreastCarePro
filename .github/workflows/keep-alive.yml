@@ -1,0 +1,31 @@
+name: Keep Render Services Alive
+
+on:
+  schedule:
+    # Ping toutes les 10 minutes pour garder les serveurs actifs
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  ping-backend:
+    name: Ping Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Check
+        run: |
+          echo "🔍 Pinging backend health endpoint..."
+          curl -f -m 30 https://breastcare-backend.onrender.com/health || exit 1
+          echo "✅ Backend is alive!"
+        timeout-minutes: 1
+
+  ping-frontend:
+    name: Ping Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Frontend
+        run: |
+          echo "🔍 Pinging frontend..."
+          curl -f -m 30 https://breastcare-frontend.onrender.com || exit 1
+          echo "✅ Frontend is alive!"
+        timeout-minutes: 1
+
