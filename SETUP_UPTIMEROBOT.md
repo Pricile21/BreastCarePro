@@ -14,9 +14,18 @@
    - **Friendly Name** : `BreastCare Backend`
    - **URL** : `https://breastcare-backend.onrender.com/health`
    - **Monitoring Interval** : `5 minutes` (plan gratuit)
-   - **Timeout** : `30 seconds`
+   - **Timeout** : `60 seconds` (important pour gérer le cold start Render)
    - **Alert Contacts** : Sélectionnez votre email (vous recevrez des alertes si le serveur est down)
+   - **HTTP Method** : `GET` (ou laissez par défaut)
 3. Cliquez sur **"Create Monitor"**
+
+### ⚠️ Si vous obtenez une erreur 405 Method Not Allowed
+
+**Solution alternative** : Utilisez l'endpoint racine `/` au lieu de `/health` :
+   - **URL** : `https://breastcare-backend.onrender.com/`
+   - **Timeout** : `60 seconds`
+   
+Cet endpoint fonctionne toujours et est plus simple.
 
 ## Étape 3 : Ajouter le monitor pour le Frontend
 
@@ -52,15 +61,27 @@
 
 ## Dépannage
 
+### Erreur 405 Method Not Allowed
+**Cause** : Le serveur Render est peut-être en train de démarrer (cold start) ou l'endpoint ne supporte pas la méthode HTTP utilisée.
+
+**Solutions** :
+1. **Augmentez le timeout** à 60-90 secondes dans UptimeRobot
+2. **Utilisez l'endpoint racine `/`** au lieu de `/health` :
+   - URL : `https://breastcare-backend.onrender.com/`
+3. **Vérifiez que le serveur Render est démarré** (attendez 2-3 minutes après un déploiement)
+4. **Après le correctif déployé** : L'endpoint `/health` devrait maintenant accepter GET, HEAD et OPTIONS
+
 ### Le monitor montre "Down" (rouge)
 - Vérifiez que l'URL est correcte
-- Vérifiez que le serveur Render est démarré (peut prendre 30-50 secondes la première fois)
+- Vérifiez que le serveur Render est démarré (peut prendre 30-50 secondes la première fois après un sleep)
 - Vérifiez les logs Render pour voir s'il y a des erreurs
+- Augmentez le timeout à 60-90 secondes pour gérer le cold start
 
 ### Le serveur s'endort quand même
 - Vérifiez que le monitor est bien actif (statut "UP")
 - Augmentez la fréquence (nécessite un plan payant, mais 5 minutes devrait suffire)
-- Vérifiez que l'URL du health check est correcte : `/health` pour le backend
+- Vérifiez que l'URL du health check est correcte : `/health` ou `/` pour le backend
+- Vérifiez que le timeout est suffisant (60 secondes minimum)
 
 ## URLs de vos services
 

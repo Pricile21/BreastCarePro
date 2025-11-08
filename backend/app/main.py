@@ -281,8 +281,20 @@ async def test_post(request: Request):
     return {"status": "ok", "message": "POST fonctionne!"}
 
 @app.get("/health")
+@app.head("/health")  # Accepter aussi HEAD pour les health checks
+@app.options("/health")  # Accepter OPTIONS pour CORS preflight
 async def health_check():
-    return {"status": "healthy", "service": "breastcare-api"}
+    """
+    Health check endpoint pour les services de monitoring (UptimeRobot, etc.)
+    Endpoint simple qui ne nécessite pas d'authentification
+    """
+    import sys
+    sys.stdout.flush()  # Forcer l'écriture des logs immédiatement
+    return {
+        "status": "healthy",
+        "service": "breastcare-api",
+        "version": settings.VERSION
+    }
 
 @app.post("/admin/fix-professional-account")
 async def fix_professional_account(email: str = "pricilegangbe@gmail.com"):
