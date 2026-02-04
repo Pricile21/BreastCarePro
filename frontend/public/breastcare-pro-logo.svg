@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" fill="none">
+  <defs>
+    <linearGradient id="logoBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#fb923c"/>
+    </linearGradient>
+    <linearGradient id="logoText" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ec4899"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+    <filter id="logoShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <!-- Icon: rounded square with heart -->
+  <rect x="0" y="0" width="48" height="48" rx="10" fill="url(#logoBg)" filter="url(#logoShadow)"/>
+  <path d="M24 14.2C22.2 12.4 19.2 12.4 17.4 14.2c-2.4 2.4-2.4 6.2 0 8.6L24 38l6.6-15.2c2.4-2.4 2.4-6.2 0-8.6-1.8-1.8-4.8-1.8-6.6 0z" fill="white"/>
+  <!-- Text: BreastCare -->
+  <text x="58" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="url(#logoText)">BreastCare</text>
+  <!-- Text: Pro -->
+  <text x="58" y="44" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="400" fill="#6b7280">Pro</text>
+</svg>
