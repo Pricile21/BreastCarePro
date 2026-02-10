@@ -1,0 +1,74 @@
+# Cloud Build : build et déploiement Backend + Frontend depuis GitHub
+# À utiliser avec un déclencheur Cloud Build (répo GitHub, branche main).
+# Remplacez _REGION et _PROJECT_ID par vos valeurs, ou utilisez des substitutions.
+
+substitutions:
+  _REGION: europe-west1
+  _PROJECT_ID: project-6268991f-ee15-44f6-875   # À remplacer par votre ID projet
+  _BACKEND_URL: https://backend-REMPLACER.run.app   # Remplacer par l'URL réelle du service backend après son 1er déploiement
+
+steps:
+  # --- Backend ---
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-backend
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/backend:latest'
+      - './backend'
+    dir: .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-backend
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/backend:latest'
+    waitFor: ['build-backend']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-backend
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'backend'
+      - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/backend:latest'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-backend']
+
+  # --- Frontend (NEXT_PUBLIC_API_URL = _BACKEND_URL/api/v1) ---
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build-frontend
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/frontend:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=${_BACKEND_URL}/api/v1'
+      - './frontend'
+    dir: .
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-frontend
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/frontend:latest'
+    waitFor: ['build-frontend']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-frontend
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend'
+      - '--image=${_REGION}-docker.pkg.dev/${_PROJECT_ID}/breastcare-repo/frontend:latest'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-frontend']
+
+options:
+  logging: CLOUD_LOGGING_ONLY

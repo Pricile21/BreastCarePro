@@ -70,8 +70,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
-# Run the application
-# --limit-max-requests: Augmenter la limite de taille de requête à 100MB (100 * 1024 * 1024 = 104857600 bytes)
+# Run the application (PORT from env for Cloud Run / Render, default 8000)
+# --limit-max-requests: Augmenter la limite de taille de requête à 100MB
 # --timeout-keep-alive: Augmenter le timeout pour les requêtes longues (analyses ML)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--limit-concurrency", "1000", "--timeout-keep-alive", "300"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --limit-concurrency 1000 --timeout-keep-alive 300"]
 
