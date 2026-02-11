@@ -1,0 +1,42 @@
+# Build et déploiement du FRONTEND uniquement sur Cloud Run
+# Utilisez ce fichier dans un déclencheur Cloud Build avec la substitution _NEXT_PUBLIC_API_URL
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/frontend:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=${_NEXT_PUBLIC_API_URL}'
+      - './frontend'
+    id: build-frontend
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/frontend:latest'
+    waitFor: ['build-frontend']
+    id: push-frontend
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend'
+      - '--image=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/frontend:latest'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-frontend']
+    id: deploy-frontend
+
+substitutions:
+  _REGION: europe-west1
+  _REPO_NAME: cloud-run-source-deploy
+  # URL complète de l'API (backend Cloud Run) + /api/v1
+  _NEXT_PUBLIC_API_URL: https://backend-510831995538.europe-west1.run.app/api/v1
+
+options:
+  logging: CLOUD_LOGGING_ONLY

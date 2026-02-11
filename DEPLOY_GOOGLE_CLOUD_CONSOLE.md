@@ -104,7 +104,9 @@ Une fois le déploiement terminé, notez **l’URL du service** (ex. `https://ba
    - **Variable de build** (Build argument) à ajouter si l’interface le permet :
      - Nom : `NEXT_PUBLIC_API_URL`  
      - Valeur : `https://backend-XXXXX-ew.a.run.app/api/v1`  
-     (remplacez par l’URL réelle du backend notée à l’étape 3).  
+     (remplacez par l’URL réelle du backend notée à l’étape 3).
+
+**Si vous n’avez pas trouvé où définir cette variable** et que le frontend affiche « Vérifiez que le backend est démarré sur http://localhost:8000 » : le frontend a été construit sans `NEXT_PUBLIC_API_URL`, il appelle donc encore localhost. Il faut **reconstruire** le frontend avec l’URL du backend. Voir la section « Frontend : forcer NEXT_PUBLIC_API_URL et reconstruire » ci-dessous.  
    Si vous ne pouvez pas passer d’argument au build, vous devrez soit redéployer plus tard avec la bonne valeur, soit la définir au build via un fichier `cloudbuild.yaml` (voir ci‑dessous).  
 4. **Service** :
    - Nom : **`frontend`**.
@@ -254,6 +256,45 @@ Sur la page du **déclencheur** (celle avec Source, Branche, Configuration) :
 2. Enregistrez le déclencheur.
 
 Ainsi, le prochain build construira l’image à partir du backend et le build pourra réussir.
+
+---
+
+## Frontend : forcer NEXT_PUBLIC_API_URL et reconstruire
+
+Si le frontend affiche **« Erreur de connexion au serveur. Vérifiez que le backend est démarré sur http://localhost:8000 »**, c’est qu’il a été construit **sans** `NEXT_PUBLIC_API_URL` : il utilise donc la valeur par défaut (localhost). Il faut **reconstruire** le frontend avec l’URL du backend Cloud Run.
+
+Un fichier **`cloudbuild-frontend.yaml`** à la racine du dépôt fait ce build avec la bonne URL.
+
+### Étapes
+
+1. **Pousser le fichier dans GitHub**  
+   Assurez-vous que **`cloudbuild-frontend.yaml`** est à la racine du dépôt (il contient déjà l’URL `https://backend-510831995538.europe-west1.run.app/api/v1`). Si votre URL backend est différente, ouvrez le fichier et modifiez la ligne **`_NEXT_PUBLIC_API_URL`** dans la section **`substitutions`**.
+
+2. **Ouvrir Cloud Build**  
+   Dans la console : recherchez **« Cloud Build »** → **« Déclencheurs »** (Triggers).
+
+3. **Créer un déclencheur pour le frontend** (ou modifier celui qui build le frontend)  
+   - **Créer un déclencheur** (ou **Modifier** le déclencheur existant du frontend).  
+   - **Dépôt** : même dépôt GitHub (ex. `Pricile21/BreastCarePro`).  
+   - **Branche** : `^main$` (ou votre branche).  
+   - **Configuration** : choisir **« Fichier de configuration Cloud Build (YAML ou JSON) »**.  
+   - **Emplacement** : **`cloudbuild-frontend.yaml`** (à la racine du dépôt).  
+   - **Substitutions** (si l’interface les propose) :  
+     - `_NEXT_PUBLIC_API_URL` = `https://backend-510831995538.europe-west1.run.app/api/v1`  
+     - `_REGION` = `europe-west1`  
+     - `_REPO_NAME` = `cloud-run-source-deploy`  
+     (Si le dépôt Artifact Registry a un autre nom, mettez-le dans `_REPO_NAME`.)  
+   - Enregistrez le déclencheur.
+
+4. **Lancer le build**  
+   - Soit **« Exécuter »** / **« Déclencher »** le déclencheur à la main.  
+   - Soit faire un **commit + push** sur la branche (si le déclencheur est sur « push »).  
+   Attendez la fin du build et du déploiement.
+
+5. **Tester**  
+   Rouvrez l’URL du frontend (ex. `https://frontend-510831995538.europe-west1.run.app`). La page de connexion doit appeler le backend Cloud Run et ne plus afficher l’erreur localhost.
+
+**Résumé** : La variable `NEXT_PUBLIC_API_URL` doit être définie **au build** (pas au runtime). Comme la console ne la propose pas toujours, on utilise **`cloudbuild-frontend.yaml`** dans un déclencheur Cloud Build pour builder le frontend avec la bonne URL, puis déployer sur Cloud Run.
 
 ---
 
