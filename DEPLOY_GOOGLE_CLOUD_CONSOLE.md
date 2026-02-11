@@ -161,7 +161,140 @@ Un fichier **`cloudbuild.yaml`** est fourni à la racine du dépôt. Pour l’ut
 
 ---
 
-## Liens directs utiles
+## Guide étape par étape : ajouter les variables d’environnement et Cloud SQL
+
+Suivez ces étapes **dans l’ordre** pour configurer le service **breastcarepro** (variables d’environnement + connexion Cloud SQL).
+
+### Étape 1 : Ouvrir le service Cloud Run
+
+1. Allez sur [Cloud Run](https://console.cloud.google.com/run) (ou recherchez **« Cloud Run »** dans la barre de recherche).
+2. Dans la liste des services, cliquez sur le nom **breastcarepro**.
+
+### Étape 2 : Ouvrir la configuration du service (où sont les variables d’environnement)
+
+**Important** : « Modifier les paramètres du dépôt » ouvre le **déclencheur Cloud Build** (source, branche, type de build). Ce n’est **pas** là qu’on met les variables d’environnement.
+
+Pour ajouter les variables d’environnement, il faut éditer le **service** (révision) :
+
+1. Allez sur **Cloud Run** → **Services** → cliquez sur **breastcarepro**.
+2. Ouvrez l’onglet **« Révisions »** (Revisions).
+3. En haut de la liste des révisions, cliquez sur **« Déployer une nouvelle révision »** (ou **« NEW REVISION »** / **« Deploy new revision »**).  
+   **Ou** : cliquez sur le **nom d’une révision** existante, puis sur **« Modifier »** / **« Edit »** si disponible.
+4. La page qui s’ouvre contient les paramètres du **conteneur** : onglets **Conteneurs**, **Variables et secrets**, **Connexions**, etc. C’est là que vous ajoutez les variables d’environnement (étape 3 ci‑dessous).
+
+**Si vous ne voyez pas « Déployer une nouvelle révision »** : ouvrez l’onglet **« YAML »** du service. Vous pouvez ajouter les variables sous `spec.template.spec.containers[0].env`. Exemple :
+
+```yaml
+env:
+  - name: DATABASE_URL
+    value: "postgresql://breastcare:MOT_DE_PASSE@/breastcare_db?host=/cloudsql/project-6268991f-ee15-44f6-875:europe-west1:breastcare-db"
+  - name: SECRET_KEY
+    value: "votre-cle-secrete"
+  - name: ENVIRONMENT
+    value: "production"
+```
+
+Puis enregistrez / déployez.
+
+### Étape 3 : Où définir les variables d’environnement
+
+1. Cliquez sur l’onglet **« Variables et secrets »** (ou **« Variables & Secrets »**).
+2. Dans la section **« Variables d’environnement »**, vous verrez soit « Aucune » soit une liste.
+3. Cliquez sur **« + Ajouter une variable »** (ou **« ADD VARIABLE »**).
+4. Ajoutez **une variable à la fois** comme ci-dessous.
+
+| Nom            | Valeur (à adapter) |
+|----------------|--------------------|
+| `DATABASE_URL` | `postgresql://breastcare:VOTRE_MOT_DE_PASSE@/breastcare_db?host=/cloudsql/project-6268991f-ee15-44f6-875:europe-west1:breastcare-db` |
+| `SECRET_KEY`   | Une longue chaîne aléatoire (ex. 32 caractères) |
+| `ENVIRONMENT`  | `production` |
+
+- **DATABASE_URL** : remplacez **VOTRE_MOT_DE_PASSE** par le mot de passe de l’utilisateur **breastcare** que vous avez créé dans Cloud SQL (section Utilisateurs).
+- **SECRET_KEY** : inventez une clé secrète (ex. `MaCleSecrete123TresLonguePourJWT!`) ou générez-en une sur [randomkeygen.com](https://randomkeygen.com/) (onglet « Code Key »).
+- **ENVIRONMENT** : tapez exactement `production`.
+
+5. Après avoir ajouté les 3 variables, vérifiez qu’elles s’affichent bien dans la liste.
+
+### Étape 4 : Ajouter la connexion Cloud SQL
+
+1. Restez sur la page de modification (ou allez dans l’onglet **« Connexions »** / **« Connections »** selon l’interface).
+2. Cherchez la section **« Connexions Cloud SQL »** ou **« Cloud SQL connections »**.
+3. Cliquez sur **« Ajouter une connexion »** (ou **« ADD CLOUD SQL CONNECTION »**).
+4. Sélectionnez votre instance **breastcare-db** dans la liste.
+5. Validez (Enregistrer / OK).
+
+### Étape 5 : Vérifier le port et la mémoire (onglet Conteneurs)
+
+1. Cliquez sur l’onglet **« Conteneurs »** (ou **« CONTAINER »**).
+2. Développez la section du conteneur (ex. « breastcarepro ») si besoin.
+3. **Port** : vérifiez que **8080** est indiqué (sinon, mettez **8080**).
+4. **Mémoire** : mettez au moins **2 Gio** (2 Go) pour le backend avec ML.
+5. Optionnel : si disponible, augmentez le **« Délai de démarrage du conteneur »** (Container startup timeout) à **300** secondes.
+
+### Étape 6 : Déployer
+
+1. En bas de la page, cliquez sur **« Déployer »** (ou **« DEPLOY »**).
+2. Attendez la fin du déploiement (quelques minutes).
+3. Une fois « Révision déployée » ou « Deployment complete », testez l’URL du service (ex. `https://breastcarepro-510831995538.europe-west1.run.app/health`).
+
+---
+
+**Résumé** : Les variables d’environnement se définissent dans **Cloud Run** → service **breastcarepro** → onglet **« Révisions »** → **« Déployer une nouvelle révision »** (ou **YAML**), puis onglet **« Variables et secrets »** → **« Ajouter une variable »**. Pas dans le déclencheur Cloud Build.
+
+---
+
+## Corriger le déclencheur pour que le build parte du dossier backend
+
+Sur la page du **déclencheur** (celle avec Source, Branche, Configuration) :
+
+1. Section **Configuration** :
+   - **Type** : au lieu de « Détection automatique », choisissez **« Dockerfile »**.
+   - **Emplacement** (ou « Répertoire source » / « Context ») : indiquez **`backend`** pour que le build utilise le dossier `backend/` et le fichier `backend/Dockerfile`.  
+     Si l’interface propose **« Fichier Dockerfile »** : mettez **`Dockerfile`** (relatif au répertoire `backend`) ou **`backend/Dockerfile`** si le chemin est relatif à la racine du dépôt.
+2. Enregistrez le déclencheur.
+
+Ainsi, le prochain build construira l’image à partir du backend et le build pourra réussir.
+
+---
+
+## Dépannage : « The user-provided container failed to start and listen on PORT=8080 »
+
+Cette erreur apparaît souvent quand **aucune variable d’environnement** n’est définie et/ou **Cloud SQL** n’est pas connecté. Le backend ne peut pas démarrer correctement.
+
+### À faire sur le service Cloud Run (breastcarepro)
+
+1. **Ouvrir le service**  
+   Cloud Run → cliquez sur le service **breastcarepro**.
+
+2. **Modifier et déployer une nouvelle révision**  
+   Onglet **« Révisions »** ou en haut : **« Modifier et déployer une nouvelle révision »** (Edit & deploy new revision).
+
+3. **Variables d’environnement**  
+   Section **« Variables et secrets »** → **« Variables d’environnement »** → **« Ajouter une variable »**. Ajoutez :
+   - **`DATABASE_URL`**  
+     `postgresql://breastcare:VOTRE_MOT_DE_PASSE@/breastcare_db?host=/cloudsql/project-6268991f-ee15-44f6-875:europe-west1:breastcare-db`  
+     (remplacez `VOTRE_MOT_DE_PASSE` par le mot de passe de l’utilisateur `breastcare` dans Cloud SQL.)
+   - **`SECRET_KEY`**  
+     Une chaîne aléatoire longue (ex. générée sur https://randomkeygen.com/ ou `openssl rand -hex 32`).
+   - **`ENVIRONMENT`**  
+     `production`
+
+4. **Connexion Cloud SQL**  
+   Section **« Connexions »** (ou **Connections**, **Cloud SQL**) → **« Ajouter une connexion »** → sélectionnez l’instance **`breastcare-db`**. Enregistrez.
+
+5. **Port**  
+   Dans **« Conteneurs »** → **« Port »**, vérifiez que **8080** est bien indiqué.
+
+6. **Délai de démarrage (optionnel)**  
+   Si le backend met longtemps à démarrer (modèles ML), augmentez le **« Délai de démarrage du conteneur »** (Container startup timeout) à **300** secondes ou plus (si l’interface le propose dans Paramètres avancés).
+
+7. **Mémoire**  
+   Pour le backend avec ML, mettez au moins **2 Gio** (512 Mio peut être insuffisant au démarrage).
+
+8. **Déployer**  
+   Cliquez sur **« Déployer »**. Attendez la fin du déploiement puis testez l’URL du service.
+
+Après avoir poussé les changements du Dockerfile (port 8080, healthcheck), déclenchez un **nouveau build** depuis GitHub (nouveau commit ou « Déclencher un déploiement » dans Cloud Run) pour que l’image soit reconstruite.
 
 - **Cloud Run** : [console.cloud.google.com/run](https://console.cloud.google.com/run)  
 - **Cloud SQL** : [console.cloud.google.com/sql](https://console.cloud.google.com/sql)  

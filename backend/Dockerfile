@@ -63,15 +63,14 @@ RUN if [ -d "articles" ]; then cp -r articles /articles; fi || mkdir -p /article
 # Create data directory for uploads
 RUN mkdir -p /app/data /app/uploads /app/static
 
-# Expose port
-EXPOSE 8000
+# Cloud Run utilise PORT=8080 par défaut ; en local on utilise 8000
+ENV PORT=8080
+EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+# Health check (port depuis PORT pour Cloud Run)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('PORT', '8080'))"
 
-# Run the application (PORT from env for Cloud Run / Render, default 8000)
-# --limit-max-requests: Augmenter la limite de taille de requête à 100MB
-# --timeout-keep-alive: Augmenter le timeout pour les requêtes longues (analyses ML)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --limit-concurrency 1000 --timeout-keep-alive 300"]
+# Run the application (PORT depuis env pour Cloud Run)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --limit-concurrency 1000 --timeout-keep-alive 300"]
 
