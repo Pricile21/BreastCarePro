@@ -5,15 +5,25 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-console.log('🌐 API_BASE_URL configuré:', API_BASE_URL);
+/** En production (page en HTTPS), forcer l'URL de l'API en HTTPS pour éviter Mixed Content. */
+function normalizeApiBaseUrl(url: string): string {
+  if (typeof window === 'undefined') return url;
+  if (window.location?.protocol !== 'https:') return url;
+  if (url.startsWith('http://')) return url.replace(/^http:\/\//i, 'https://');
+  return url;
+}
+
+const API_BASE_URL_NORMALIZED = normalizeApiBaseUrl(API_BASE_URL);
+
+console.log('🌐 API_BASE_URL configuré:', API_BASE_URL_NORMALIZED);
 console.log('🌐 NEXT_PUBLIC_API_URL depuis env:', process.env.NEXT_PUBLIC_API_URL);
 
 export class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
 
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl: string = API_BASE_URL_NORMALIZED) {
+    this.baseUrl = normalizeApiBaseUrl(baseUrl);
     this.token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     console.log('🔧 ApiClient initialisé avec baseUrl:', this.baseUrl);
   }
@@ -26,7 +36,8 @@ export class ApiClient {
     console.log('🔵 [REQUEST] endpoint:', endpoint)
     console.log('🔵 [REQUEST] options:', options)
     
-    const url = `${this.baseUrl}${endpoint}`;
+    let url = `${this.baseUrl}${endpoint}`;
+    url = normalizeApiBaseUrl(url);
     console.log('🔵 [REQUEST] URL construite:', url)
     
     // Récupérer le token à chaque requête pour s'assurer qu'il est à jour
@@ -307,7 +318,8 @@ export class ApiClient {
       formData.append('patient_id', patientId);
     }
 
-    const response = await fetch(`${this.baseUrl}/mammography/analyze`, {
+    const analyzeUrl = normalizeApiBaseUrl(`${this.baseUrl}/mammography/analyze`);
+    const response = await fetch(analyzeUrl, {
       method: 'POST',
       headers: {
         Authorization: this.token ? `Bearer ${this.token}` : '',
@@ -408,7 +420,7 @@ export class ApiClient {
   }
 
   async downloadReport(reportId: string): Promise<Blob> {
-    const url = `${this.baseUrl}/professionals/reports/${reportId}/download`;
+    const url = normalizeApiBaseUrl(`${this.baseUrl}/professionals/reports/${reportId}/download`);
     const currentToken = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     
     const headers: HeadersInit = {};
