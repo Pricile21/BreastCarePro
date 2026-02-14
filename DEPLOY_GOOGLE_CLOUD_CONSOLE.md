@@ -82,6 +82,7 @@ Notez :
      (remplacez `VOTRE_MOT_DE_PASSE` et `VOTRE_PROJECT_ID`).  
    - `SECRET_KEY` : une clé secrète forte (générée aléatoirement).  
    - `ENVIRONMENT` : `production`.  
+   - **`BACKEND_CORS_ORIGINS`** : URL du frontend pour autoriser les requêtes du navigateur (CORS). Exemple : `https://frontend-510831995538.europe-west1.run.app` (sans slash final). Sans cette variable, inscription et connexion depuis le frontend échouent avec « Impossible d'établir la connexion ».  
 8. **Connexion Cloud SQL** (dans "Connexions", "Cloud SQL" ou "Connections") :
    - Ajoutez l’instance **`breastcare-db`** créée à l’étape 2.  
 9. **Ressources** (optionnel) :

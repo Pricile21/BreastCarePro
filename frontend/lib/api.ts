@@ -175,28 +175,24 @@ export class ApiClient {
         name: error?.name
       });
       
-      // Gérer différents types d'erreurs
+      // Gérer différents types d'erreurs (message adapté selon environnement local ou déployé)
+      const isLocalBackend = typeof this.baseUrl === 'string' && this.baseUrl.includes('localhost');
       if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-        const networkError = 'Erreur de connexion au serveur. Impossible d\'établir la connexion.\n\n' +
-          'Vérifications:\n' +
-          '1. Le backend est-il démarré ? Ouvrez un terminal et exécutez:\n' +
-          '   cd backend\n' +
-          '   python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000\n\n' +
-          '2. Testez dans votre navigateur: http://localhost:8000/health\n' +
-          '   Vous devriez voir: {"status": "healthy", "service": "breastcare-api"}\n\n' +
-          '3. Vérifiez que le port 8000 n\'est pas utilisé par un autre programme';
+        const networkError = isLocalBackend
+          ? 'Erreur de connexion au serveur. Impossible d\'établir la connexion.\n\n' +
+            'Vérifications:\n' +
+            '1. Le backend est-il démarré ? (cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000)\n' +
+            '2. Testez: http://localhost:8000/health\n' +
+            '3. Vérifiez que le port 8000 n\'est pas utilisé par un autre programme'
+          : 'Erreur de connexion au serveur. Impossible d\'établir la connexion. Vérifiez votre connexion internet ou réessayez plus tard.';
         throw new Error(networkError);
       }
       
       // Gérer les erreurs de timeout (AbortError)
       if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-        const timeoutError = `Timeout: Le serveur ne répond pas après 60 secondes.\n\n` +
-          `Vérifications à faire:\n` +
-          `1. Le backend est-il démarré ? (cd backend && python -m uvicorn app.main:app --reload)\n` +
-          `2. Le backend écoute-t-il sur http://localhost:8000 ?\n` +
-          `3. Y a-t-il des erreurs dans les logs du backend ?\n` +
-          `4. Le backend est-il en train de charger des modèles ML ? (première requête peut être lente)\n\n` +
-          `Testez: http://localhost:8000/health dans votre navigateur`;
+        const timeoutError = isLocalBackend
+          ? `Timeout: Le serveur ne répond pas. Vérifiez que le backend est démarré (http://localhost:8000/health).`
+          : `Timeout: Le serveur ne répond pas. Réessayez dans quelques instants.`;
         throw new Error(timeoutError);
       }
       
