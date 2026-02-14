@@ -453,9 +453,9 @@ export class ApiClient {
     return this.request(`/patients?skip=${skip}&limit=${limit}`);
   }
 
-  // Access request endpoints
+  // Access request endpoints (slash final pour éviter redirection HTTP derrière proxy)
   async createAccessRequest(requestData: any) {
-    return this.request('/access-requests', {
+    return this.request('/access-requests/', {
       method: 'POST',
       body: JSON.stringify(requestData),
     });
@@ -467,7 +467,7 @@ export class ApiClient {
     params.append('skip', skip.toString());
     params.append('limit', limit.toString());
     
-    return this.request(`/access-requests?${params}`);
+    return this.request(`/access-requests/?${params}`);
   }
 
   // Risk assessment endpoints - Modèle Gail

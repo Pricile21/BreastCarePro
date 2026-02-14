@@ -72,5 +72,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('PORT', '8080'))"
 
 # Run the application (PORT depuis env pour Cloud Run)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --limit-concurrency 1000 --timeout-keep-alive 300"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --limit-concurrency 1000 --timeout-keep-alive 300 --forwarded-allow-ips '*'"]
 
